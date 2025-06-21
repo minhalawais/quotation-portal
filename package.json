@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
     "dev": "next dev",
-    "lint": "next lint",
+    "build": "next build",
     "start": "next start",
+    "lint": "next lint",
     "setup-database": "node scripts/setup-database.js",
-    "seed-products": "node scripts/seed-products.js"
+    "seed-products": "node scripts/seed-products.js",
+    "postinstall": "npm run setup-database"
   },
   "dependencies": {
     "@auth/core": "latest",
