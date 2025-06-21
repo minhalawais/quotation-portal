@@ -136,11 +136,11 @@ export default function ProductList({ userRole }: ProductListProps) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 lg:px-0">
         {[...Array(8)].map((_, i) => (
           <Card key={i} className="animate-pulse overflow-hidden">
-            <div className="h-40 sm:h-48 bg-gray-200"></div>
-            <CardContent className="p-3 sm:p-4">
+            <div className="h-48 bg-gray-200"></div>
+            <CardContent className="p-4">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
               <div className="h-8 bg-gray-200 rounded"></div>
@@ -153,10 +153,10 @@ export default function ProductList({ userRole }: ProductListProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 lg:px-0">
         {products.map((product) => (
           <Card key={product._id} className="card-hover overflow-hidden bg-white shadow-sm border-0 group">
-            <div className="relative h-40 sm:h-48 overflow-hidden">
+            <div className="relative h-48 overflow-hidden">
               <Image
                 src={product.imagePath || "/placeholder.svg?height=200&width=300"}
                 alt={product.name}
@@ -183,53 +183,51 @@ export default function ProductList({ userRole }: ProductListProps) {
               </div>
             </div>
 
-            <CardContent className="p-3 sm:p-4">
-              <div className="space-y-2 sm:space-y-3">
+            <CardContent className="p-4">
+              <div className="space-y-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900 line-clamp-2 text-sm sm:text-base leading-tight">
+                  <h3 className="font-semibold text-gray-900 line-clamp-2 text-sm leading-tight mb-1">
                     {product.name}
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     {product.group} • {product.subGroup}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-lg sm:text-xl font-bold text-blue-600">
-                      PKR {product.price.toLocaleString()}
-                    </span>
-                  </div>
+                  <span className="text-lg font-bold text-blue-600">PKR {product.price.toLocaleString()}</span>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleView(product)}
-                    className="flex-1 mr-2 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200 text-xs sm:text-sm h-8 sm:h-9"
+                    className="w-full hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200 h-9"
                   >
-                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    <span className="hidden sm:inline">View</span>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
                   </Button>
 
                   {userRole === "manager" && (
-                    <div className="flex space-x-1">
+                    <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(product._id)}
-                        className="hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all duration-200 h-8 w-8 sm:h-9 sm:w-9 p-0"
+                        className="flex-1 hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all duration-200 h-9"
                       >
-                        <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => deleteProduct(product)}
-                        className="hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all duration-200 h-8 w-8 sm:h-9 sm:w-9 p-0"
+                        className="flex-1 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all duration-200 h-9"
                       >
-                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
                       </Button>
                     </div>
                   )}
@@ -241,7 +239,7 @@ export default function ProductList({ userRole }: ProductListProps) {
 
         {products.length === 0 && (
           <div className="col-span-full">
-            <Card className="p-8 sm:p-12 text-center bg-gradient-to-br from-gray-50 to-gray-100 border-dashed border-2 border-gray-300">
+            <Card className="p-8 sm:p-12 text-center bg-gradient-to-br from-gray-50 to-gray-100 border-dashed border-2 border-gray-300 mx-4 lg:mx-0">
               <Package className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No products found</h3>
               <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">

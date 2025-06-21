@@ -71,7 +71,7 @@ export default function RecentQuotations() {
                   <FileText className="h-4 w-4 text-gray-400" />
                   <div>
                     <p className="font-medium">{quotation.customerName}</p>
-                    <p className="text-sm text-gray-600">₹{quotation.totalAmount.toFixed(2)}</p>
+                    <p className="text-sm text-gray-600">PKR{quotation.totalAmount.toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="text-right">

@@ -92,6 +92,28 @@
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
+
+  /* Line clamp utilities for mobile */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
 }
 
 @keyframes fadeIn {
@@ -156,6 +178,37 @@
   .mobile-button {
     @apply h-10 px-3 text-sm;
   }
+
+  /* Enhanced mobile form styling */
+  .mobile-form-spacing {
+    @apply space-y-4;
+  }
+
+  .mobile-input-height {
+    @apply h-11;
+  }
+
+  .mobile-card-padding {
+    @apply p-4;
+  }
+
+  /* Mobile-specific grid adjustments */
+  .mobile-grid-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Mobile button improvements */
+  .mobile-button-full {
+    @apply w-full h-11 text-base;
+  }
+
+  .mobile-button-group {
+    @apply flex flex-col gap-3;
+  }
 }
 
 /* Prevent zoom on input focus on iOS */
@@ -188,5 +241,43 @@
 
   .safe-area-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Command component styles */
+[cmdk-root] {
+  max-height: 400px;
+}
+
+[cmdk-input] {
+  outline: none;
+  border: none;
+  background: transparent;
+}
+
+[cmdk-item] {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+[cmdk-item][aria-selected="true"] {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Mobile-specific improvements for command palette */
+@media (max-width: 768px) {
+  [cmdk-root] {
+    max-height: 300px;
+  }
+
+  [cmdk-item] {
+    padding: 12px 8px;
+    font-size: 14px;
+  }
+
+  [cmdk-input] {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 12px 8px;
   }
 }

@@ -1,8 +1,10 @@
 "use client"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { X, Download, Send, Phone, MapPin, Calendar, Clock, FileText } from "lucide-react"
+import { Download, Phone, MapPin, Calendar, Clock, FileText, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 interface QuotationItem {
   productId: string
@@ -22,16 +24,14 @@ interface Quotation {
   items: QuotationItem[]
 }
 
-interface QuotationPreviewProps {
-  quotation: Quotation | null
-  isOpen: boolean
-  onClose: () => void
-  onDownload: () => void
-  onSend?: () => void
+interface PublicQuotationViewProps {
+  quotation: Quotation
 }
 
-export default function QuotationPreview({ quotation, isOpen, onClose, onDownload, onSend }: QuotationPreviewProps) {
-  if (!quotation) return null
+export default function PublicQuotationView({ quotation }: PublicQuotationViewProps) {
+  const [downloading, setDownloading] = useState(false)
+  const router = useRouter()
+  const { toast } = useToast()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -46,47 +46,70 @@ export default function QuotationPreview({ quotation, isOpen, onClose, onDownloa
     }
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0 sm:p-6">
-        {/* Mobile Header */}
-        <DialogHeader className="sticky top-0 bg-white z-10 p-4 sm:p-0 border-b sm:border-b-0">
-          <DialogTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
-              <span className="text-lg sm:text-xl">Quotation Preview</span>
-            </div>
-            <div className="flex items-center space-x-2 w-full sm:w-auto">
-              <Button
-                onClick={onDownload}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none mobile-button"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Download PDF</span>
-                <span className="sm:hidden">PDF</span>
-              </Button>
-              {onSend && quotation.status === "pending" && (
-                <Button
-                  onClick={onSend}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none mobile-button"
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Send</span>
-                  <span className="sm:hidden">Send</span>
-                </Button>
-              )}
-              <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
+  const handleDownload = async () => {
+    setDownloading(true)
+    try {
+      // Use the public PDF endpoint that doesn't require authentication
+      const response = await fetch(`/api/public/quotations/${quotation._id}/pdf`)
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `quotation-${quotation.customerName.replace(/\s+/g, "-")}-${quotation._id.slice(-6)}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
 
-        {/* PDF Preview */}
-        <div className="bg-white border-0 sm:border rounded-none sm:rounded-lg shadow-none sm:shadow-sm">
-          {/* Header */}
+        toast({
+          title: "Success",
+          description: "Quotation PDF downloaded successfully",
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(errorData.error || "Failed to download PDF")
+      }
+    } catch (error) {
+      console.error("Download error:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download PDF",
+        variant: "destructive",
+      })
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-gray-100">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Inventory Portal</h1>
+                <p className="text-sm text-gray-600">Quotation View</p>
+              </div>
+            </div>
+            <Button onClick={handleDownload} disabled={downloading} className="bg-blue-600 hover:bg-blue-700">
+              <Download className="mr-2 h-4 w-4" />
+              {downloading ? "Downloading..." : "Download PDF"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* Quotation Header */}
           <div className="text-center mb-6 sm:mb-8 border-b-2 border-blue-600 pb-4 sm:pb-6 px-4 sm:px-8 pt-4 sm:pt-8">
             <div className="mb-4">
               <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">Inventory Portal</h1>
@@ -354,7 +377,7 @@ export default function QuotationPreview({ quotation, isOpen, onClose, onDownloa
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }

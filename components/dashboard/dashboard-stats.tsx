@@ -62,7 +62,7 @@ export default function DashboardStats() {
     },
     {
       title: "Total Revenue",
-      value: `₹${stats.totalRevenue.toLocaleString()}`,
+      value: `PKR${stats.totalRevenue.toLocaleString()}`,
       icon: TrendingUp,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
