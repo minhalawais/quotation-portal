@@ -4,16 +4,9 @@
       "maxDuration": 30
     }
   },
-  "env": {
-    "MONGODB_URI": "@mongodb_uri",
-    "NEXTAUTH_URL": "@nextauth_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret"
-  },
   "build": {
     "env": {
-      "MONGODB_URI": "@mongodb_uri",
-      "NEXTAUTH_URL": "@nextauth_url",
-      "NEXTAUTH_SECRET": "@nextauth_secret"
+      "NODE_ENV": "production"
     }
   }
 }
