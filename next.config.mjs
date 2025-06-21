@@ -11,16 +11,14 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    unoptimized: true, // Added from updates
+    unoptimized: true,
   },
   eslint: {
-    ignoreDuringBuilds: true, // Added from updates
+    ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // Added from updates
+    ignoreBuildErrors: true,
   },
-  // Optimize for Vercel deployment
-  output: 'standalone',
   
   // Environment variables for build
   env: {
@@ -35,6 +33,21 @@ const nextConfig = {
       config.externals.push('puppeteer')
     }
     return config
+  },
+
+  // Configure API routes timeout for Vercel
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ]
   },
 }
 
