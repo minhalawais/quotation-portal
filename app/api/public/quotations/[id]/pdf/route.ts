@@ -32,23 +32,495 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }),
     )
 
-    // Generate HTML for PDF
-    const htmlContent = generateQuotationHTML(quotation, itemsWithDetails)
-
-    // Convert HTML to PDF
-    const pdfBuffer = await generatePDFFromHTML(htmlContent)
+    // Generate PDF using serverless-compatible method
+    const pdfBuffer = await generateServerlessPDF(quotation, itemsWithDetails)
 
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="quotation-${quotation.customerName.replace(/\s+/g, "-")}-${params.id.slice(-6)}.pdf"`,
         "Content-Length": pdfBuffer.length.toString(),
-        "Cache-Control": "public, max-age=3600", // Cache for 1 hour
+        "Cache-Control": "public, max-age=3600",
       },
     })
   } catch (error) {
     console.error("Public PDF generation error:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  }
+}
+
+async function generateServerlessPDF(quotation: any, items: any[]): Promise<Buffer> {
+  try {
+    // Try puppeteer-core with chromium for serverless environments
+    const puppeteerCore = await import("puppeteer-core").catch(() => null)
+    const chromium = await import("@sparticuz/chromium").catch(() => null)
+
+    if (puppeteerCore && chromium) {
+      console.log("Using puppeteer-core with chromium for serverless")
+
+      const browser = await puppeteerCore.default.launch({
+        args: chromium.default.args,
+        defaultViewport: chromium.default.defaultViewport,
+        executablePath: await chromium.default.executablePath(),
+        headless: chromium.default.headless,
+      })
+
+      const page = await browser.newPage()
+      const htmlContent = generateQuotationHTML(quotation, items)
+
+      await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "20px",
+          right: "20px",
+          bottom: "20px",
+          left: "20px",
+        },
+      })
+
+      await browser.close()
+      return Buffer.from(pdfBuffer)
+    }
+  } catch (error) {
+    console.log("Serverless puppeteer failed, trying regular puppeteer:", error)
+  }
+
+  try {
+    // Fallback to regular puppeteer for local development
+    const puppeteer = await import("puppeteer").catch(() => null)
+
+    if (puppeteer) {
+      console.log("Using regular puppeteer")
+
+      const browser = await puppeteer.default.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      })
+
+      const page = await browser.newPage()
+      const htmlContent = generateQuotationHTML(quotation, items)
+
+      await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "20px",
+          right: "20px",
+          bottom: "20px",
+          left: "20px",
+        },
+      })
+
+      await browser.close()
+      return Buffer.from(pdfBuffer)
+    }
+  } catch (error) {
+    console.log("Regular puppeteer failed, using React PDF:", error)
+  }
+
+  // Final fallback: Use React PDF for serverless compatibility
+  return await generateReactPDF(quotation, items)
+}
+
+async function generateReactPDF(quotation: any, items: any[]): Promise<Buffer> {
+  try {
+    const ReactPDF = await import("@react-pdf/renderer")
+    const { Document, Page, Text, View, StyleSheet, pdf } = ReactPDF
+
+    // Define styles
+    const styles = StyleSheet.create({
+      page: {
+        flexDirection: "column",
+        backgroundColor: "#ffffff",
+        padding: 30,
+        fontFamily: "Helvetica",
+      },
+      header: {
+        marginBottom: 20,
+        textAlign: "center",
+        borderBottom: "3 solid #2563eb",
+        paddingBottom: 15,
+      },
+      companyName: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#2563eb",
+        marginBottom: 5,
+      },
+      companyTagline: {
+        fontSize: 12,
+        color: "#666666",
+        marginBottom: 15,
+      },
+      quotationTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        color: "#1e3a8a",
+        marginBottom: 8,
+      },
+      quotationNumber: {
+        fontSize: 12,
+        color: "#666666",
+        backgroundColor: "#f3f4f6",
+        padding: 8,
+        borderRadius: 15,
+      },
+      infoSection: {
+        flexDirection: "row",
+        marginBottom: 25,
+        gap: 30,
+      },
+      infoBlock: {
+        flex: 1,
+      },
+      infoTitle: {
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#2563eb",
+        marginBottom: 10,
+        borderBottom: "1 solid #e5e7eb",
+        paddingBottom: 3,
+      },
+      infoItem: {
+        flexDirection: "row",
+        marginBottom: 5,
+      },
+      infoLabel: {
+        fontSize: 10,
+        fontWeight: "bold",
+        color: "#374151",
+        width: 60,
+      },
+      infoValue: {
+        fontSize: 10,
+        color: "#6b7280",
+        flex: 1,
+      },
+      itemsSection: {
+        marginBottom: 25,
+      },
+      itemsTitle: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#1e3a8a",
+        textAlign: "center",
+        marginBottom: 15,
+        backgroundColor: "#2563eb",
+        color: "#ffffff",
+        padding: 10,
+      },
+      tableHeader: {
+        flexDirection: "row",
+        backgroundColor: "#f9fafb",
+        padding: 8,
+        borderBottom: "1 solid #e5e7eb",
+      },
+      tableRow: {
+        flexDirection: "row",
+        padding: 8,
+        borderBottom: "1 solid #e5e7eb",
+      },
+      tableCell: {
+        fontSize: 9,
+        color: "#374151",
+      },
+      tableCellHeader: {
+        fontSize: 10,
+        fontWeight: "bold",
+        color: "#374151",
+      },
+      productId: {
+        width: "15%",
+      },
+      description: {
+        width: "40%",
+      },
+      quantity: {
+        width: "15%",
+        textAlign: "center",
+      },
+      unitPrice: {
+        width: "15%",
+        textAlign: "right",
+      },
+      total: {
+        width: "15%",
+        textAlign: "right",
+        fontWeight: "bold",
+        color: "#2563eb",
+      },
+      totalSection: {
+        marginTop: 20,
+        alignItems: "flex-end",
+      },
+      totalRow: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        marginBottom: 5,
+        width: 250,
+      },
+      totalLabel: {
+        fontSize: 12,
+        fontWeight: "bold",
+        color: "#374151",
+        width: 100,
+        textAlign: "right",
+        marginRight: 15,
+      },
+      totalValue: {
+        fontSize: 12,
+        color: "#6b7280",
+        width: 100,
+        textAlign: "right",
+      },
+      grandTotal: {
+        borderTop: "2 solid #2563eb",
+        paddingTop: 10,
+        marginTop: 10,
+      },
+      grandTotalLabel: {
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#1e3a8a",
+      },
+      grandTotalValue: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#2563eb",
+      },
+      terms: {
+        backgroundColor: "#f9fafb",
+        padding: 15,
+        marginTop: 25,
+        borderLeft: "4 solid #2563eb",
+      },
+      termsTitle: {
+        fontSize: 12,
+        fontWeight: "bold",
+        color: "#1e3a8a",
+        marginBottom: 8,
+      },
+      termsText: {
+        fontSize: 9,
+        color: "#6b7280",
+        lineHeight: 1.4,
+      },
+      footer: {
+        marginTop: 30,
+        textAlign: "center",
+        borderTop: "2 solid #e5e7eb",
+        paddingTop: 20,
+      },
+      contactInfo: {
+        fontSize: 10,
+        color: "#6b7280",
+        lineHeight: 1.6,
+      },
+    })
+
+    // Create PDF document
+    const MyDocument = () =>
+      React.createElement(
+        Document,
+        null,
+        React.createElement(
+          Page,
+          { size: "A4", style: styles.page },
+          // Header
+          React.createElement(
+            View,
+            { style: styles.header },
+            React.createElement(Text, { style: styles.companyName }, "Inventory Portal"),
+            React.createElement(
+              Text,
+              { style: styles.companyTagline },
+              "Professional Inventory & Quotation Management",
+            ),
+            React.createElement(Text, { style: styles.quotationTitle }, "QUOTATION"),
+            React.createElement(
+              Text,
+              { style: styles.quotationNumber },
+              `#${quotation._id.toString().slice(-8).toUpperCase()} - ${quotation.status.toUpperCase()}`,
+            ),
+          ),
+
+          // Information Section
+          React.createElement(
+            View,
+            { style: styles.infoSection },
+            React.createElement(
+              View,
+              { style: styles.infoBlock },
+              React.createElement(Text, { style: styles.infoTitle }, "Bill To:"),
+              React.createElement(
+                View,
+                { style: styles.infoItem },
+                React.createElement(Text, { style: styles.infoLabel }, "Name:"),
+                React.createElement(Text, { style: styles.infoValue }, quotation.customerName),
+              ),
+              React.createElement(
+                View,
+                { style: styles.infoItem },
+                React.createElement(Text, { style: styles.infoLabel }, "Phone:"),
+                React.createElement(Text, { style: styles.infoValue }, quotation.customerPhone),
+              ),
+              React.createElement(
+                View,
+                { style: styles.infoItem },
+                React.createElement(Text, { style: styles.infoLabel }, "Address:"),
+                React.createElement(Text, { style: styles.infoValue }, quotation.customerAddress),
+              ),
+            ),
+            React.createElement(
+              View,
+              { style: styles.infoBlock },
+              React.createElement(Text, { style: styles.infoTitle }, "Quotation Details:"),
+              React.createElement(
+                View,
+                { style: styles.infoItem },
+                React.createElement(Text, { style: styles.infoLabel }, "Date:"),
+                React.createElement(
+                  Text,
+                  { style: styles.infoValue },
+                  new Date(quotation.createdAt).toLocaleDateString(),
+                ),
+              ),
+              React.createElement(
+                View,
+                { style: styles.infoItem },
+                React.createElement(Text, { style: styles.infoLabel }, "Valid Until:"),
+                React.createElement(
+                  Text,
+                  { style: styles.infoValue },
+                  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                ),
+              ),
+              React.createElement(
+                View,
+                { style: styles.infoItem },
+                React.createElement(Text, { style: styles.infoLabel }, "Status:"),
+                React.createElement(Text, { style: styles.infoValue }, quotation.status.toUpperCase()),
+              ),
+            ),
+          ),
+
+          // Items Section
+          React.createElement(
+            View,
+            { style: styles.itemsSection },
+            React.createElement(Text, { style: styles.itemsTitle }, "Items & Services"),
+
+            // Table Header
+            React.createElement(
+              View,
+              { style: styles.tableHeader },
+              React.createElement(Text, { style: [styles.tableCellHeader, styles.productId] }, "Product ID"),
+              React.createElement(Text, { style: [styles.tableCellHeader, styles.description] }, "Description"),
+              React.createElement(Text, { style: [styles.tableCellHeader, styles.quantity] }, "Qty"),
+              React.createElement(Text, { style: [styles.tableCellHeader, styles.unitPrice] }, "Unit Price"),
+              React.createElement(Text, { style: [styles.tableCellHeader, styles.total] }, "Total"),
+            ),
+
+            // Table Rows
+            ...items.map((item, index) =>
+              React.createElement(
+                View,
+                {
+                  key: index,
+                  style: [styles.tableRow, { backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9fafb" }],
+                },
+                React.createElement(Text, { style: [styles.tableCell, styles.productId] }, item.productId),
+                React.createElement(Text, { style: [styles.tableCell, styles.description] }, item.productName),
+                React.createElement(Text, { style: [styles.tableCell, styles.quantity] }, item.quantity.toString()),
+                React.createElement(
+                  Text,
+                  { style: [styles.tableCell, styles.unitPrice] },
+                  `PKR ${item.price.toLocaleString()}`,
+                ),
+                React.createElement(
+                  Text,
+                  { style: [styles.tableCell, styles.total] },
+                  `PKR ${(item.quantity * item.price).toLocaleString()}`,
+                ),
+              ),
+            ),
+          ),
+
+          // Total Section
+          React.createElement(
+            View,
+            { style: styles.totalSection },
+            React.createElement(
+              View,
+              { style: styles.totalRow },
+              React.createElement(Text, { style: styles.totalLabel }, "Subtotal:"),
+              React.createElement(Text, { style: styles.totalValue }, `PKR ${quotation.totalAmount.toLocaleString()}`),
+            ),
+            React.createElement(
+              View,
+              { style: styles.totalRow },
+              React.createElement(Text, { style: styles.totalLabel }, "Tax (0%):"),
+              React.createElement(Text, { style: styles.totalValue }, "PKR 0"),
+            ),
+            React.createElement(
+              View,
+              { style: [styles.totalRow, styles.grandTotal] },
+              React.createElement(Text, { style: styles.grandTotalLabel }, "Grand Total:"),
+              React.createElement(
+                Text,
+                { style: styles.grandTotalValue },
+                `PKR ${quotation.totalAmount.toLocaleString()}`,
+              ),
+            ),
+          ),
+
+          // Terms and Conditions
+          React.createElement(
+            View,
+            { style: styles.terms },
+            React.createElement(Text, { style: styles.termsTitle }, "Terms & Conditions:"),
+            React.createElement(
+              Text,
+              { style: styles.termsText },
+              "• This quotation is valid for 30 days from the date of issue.\n" +
+                "• Prices are subject to change without prior notice.\n" +
+                "• Payment terms: 50% advance, 50% on delivery.\n" +
+                "• Delivery time: 7-14 business days after order confirmation.\n" +
+                "• All prices are in Pakistani Rupees (PKR).\n" +
+                "• Returns are accepted within 7 days of delivery in original condition.",
+            ),
+          ),
+
+          // Footer
+          React.createElement(
+            View,
+            { style: styles.footer },
+            React.createElement(
+              Text,
+              { style: styles.contactInfo },
+              "Inventory Portal\n" +
+                "Email: info@inventoryportal.com | Phone: +92-300-1234567\n" +
+                "Website: www.inventoryportal.com\n" +
+                "Thank you for your business!",
+            ),
+          ),
+        ),
+      )
+
+    // Generate PDF
+    const React = await import("react")
+    const pdfDoc = MyDocument()
+    const pdfBuffer = await pdf(pdfDoc).toBuffer()
+
+    return pdfBuffer
+  } catch (error) {
+    console.error("React PDF generation failed:", error)
+    throw new Error("PDF generation failed")
   }
 }
 
@@ -442,122 +914,4 @@ function generateQuotationHTML(quotation: any, items: any[]) {
 </body>
 </html>
   `
-}
-
-async function generatePDFFromHTML(html: string): Promise<Buffer> {
-  try {
-    // Try to use dynamic import for puppeteer if available
-    const puppeteer = await import("puppeteer").catch(() => null)
-
-    if (puppeteer) {
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      })
-
-      const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: "networkidle0" })
-
-      const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-          top: "20px",
-          right: "20px",
-          bottom: "20px",
-          left: "20px",
-        },
-      })
-
-      await browser.close()
-      return Buffer.from(pdfBuffer)
-    }
-  } catch (error) {
-    console.log("Puppeteer not available, using fallback PDF generation")
-  }
-
-  // Fallback: Create a simple PDF using basic PDF structure
-  return createSimplePDF(html)
-}
-
-function createSimplePDF(html: string): Buffer {
-  // Extract text content from HTML for simple PDF
-  const textContent = html
-    .replace(/<style[^>]*>.*?<\/style>/gs, "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-
-  // Create a basic PDF structure
-  const pdfContent = `%PDF-1.4
-1 0 obj
-<<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
-
-2 0 obj
-<<
-/Type /Pages
-/Kids [3 0 R]
-/Count 1
->>
-endobj
-
-3 0 obj
-<<
-/Type /Page
-/Parent 2 0 R
-/MediaBox [0 0 612 792]
-/Resources <<
-/Font <<
-/F1 4 0 R
->>
->>
-/Contents 5 0 R
->>
-endobj
-
-4 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-
-5 0 obj
-<<
-/Length ${textContent.length + 200}
->>
-stream
-BT
-/F1 12 Tf
-50 750 Td
-(QUOTATION) Tj
-0 -20 Td
-(${textContent.substring(0, 1000).replace(/[()\\]/g, "")}) Tj
-ET
-endstream
-endobj
-
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000274 00000 n 
-0000000351 00000 n 
-trailer
-<<
-/Size 6
-/Root 1 0 R
->>
-startxref
-${500 + textContent.length}
-%%EOF`
-
-  return Buffer.from(pdfContent, "utf-8")
 }
