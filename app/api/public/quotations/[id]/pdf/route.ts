@@ -32,8 +32,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }),
     )
 
-    // Generate PDF using serverless-compatible method
-    const pdfBuffer = await generateServerlessPDF(quotation, itemsWithDetails)
+    // Generate PDF using reliable method
+    const pdfBuffer = await generateReliablePDF(quotation, itemsWithDetails)
 
     return new NextResponse(pdfBuffer, {
       headers: {
@@ -49,869 +49,318 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-async function generateServerlessPDF(quotation: any, items: any[]): Promise<Buffer> {
+async function generateReliablePDF(quotation: any, items: any[]): Promise<Buffer> {
   try {
-    // Try puppeteer-core with chromium for serverless environments
-    const puppeteerCore = await import("puppeteer-core").catch(() => null)
-    const chromium = await import("@sparticuz/chromium").catch(() => null)
+    // Use jsPDF for reliable PDF generation
+    const { jsPDF } = await import("jspdf")
 
-    if (puppeteerCore && chromium) {
-      console.log("Using puppeteer-core with chromium for serverless")
-
-      const browser = await puppeteerCore.default.launch({
-        args: chromium.default.args,
-        defaultViewport: chromium.default.defaultViewport,
-        executablePath: await chromium.default.executablePath(),
-        headless: chromium.default.headless,
-      })
-
-      const page = await browser.newPage()
-      const htmlContent = generateQuotationHTML(quotation, items)
-
-      await page.setContent(htmlContent, { waitUntil: "networkidle0" })
-
-      const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-          top: "20px",
-          right: "20px",
-          bottom: "20px",
-          left: "20px",
-        },
-      })
-
-      await browser.close()
-      return Buffer.from(pdfBuffer)
-    }
-  } catch (error) {
-    console.log("Serverless puppeteer failed, trying regular puppeteer:", error)
-  }
-
-  try {
-    // Fallback to regular puppeteer for local development
-    const puppeteer = await import("puppeteer").catch(() => null)
-
-    if (puppeteer) {
-      console.log("Using regular puppeteer")
-
-      const browser = await puppeteer.default.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      })
-
-      const page = await browser.newPage()
-      const htmlContent = generateQuotationHTML(quotation, items)
-
-      await page.setContent(htmlContent, { waitUntil: "networkidle0" })
-
-      const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-          top: "20px",
-          right: "20px",
-          bottom: "20px",
-          left: "20px",
-        },
-      })
-
-      await browser.close()
-      return Buffer.from(pdfBuffer)
-    }
-  } catch (error) {
-    console.log("Regular puppeteer failed, using React PDF:", error)
-  }
-
-  // Final fallback: Use React PDF for serverless compatibility
-  return await generateReactPDF(quotation, items)
-}
-
-async function generateReactPDF(quotation: any, items: any[]): Promise<Buffer> {
-  try {
-    const ReactPDF = await import("@react-pdf/renderer")
-    const { Document, Page, Text, View, StyleSheet, pdf } = ReactPDF
-
-    // Define styles
-    const styles = StyleSheet.create({
-      page: {
-        flexDirection: "column",
-        backgroundColor: "#ffffff",
-        padding: 30,
-        fontFamily: "Helvetica",
-      },
-      header: {
-        marginBottom: 20,
-        textAlign: "center",
-        borderBottom: "3 solid #2563eb",
-        paddingBottom: 15,
-      },
-      companyName: {
-        fontSize: 24,
-        fontWeight: "bold",
-        color: "#2563eb",
-        marginBottom: 5,
-      },
-      companyTagline: {
-        fontSize: 12,
-        color: "#666666",
-        marginBottom: 15,
-      },
-      quotationTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "#1e3a8a",
-        marginBottom: 8,
-      },
-      quotationNumber: {
-        fontSize: 12,
-        color: "#666666",
-        backgroundColor: "#f3f4f6",
-        padding: 8,
-        borderRadius: 15,
-      },
-      infoSection: {
-        flexDirection: "row",
-        marginBottom: 25,
-        gap: 30,
-      },
-      infoBlock: {
-        flex: 1,
-      },
-      infoTitle: {
-        fontSize: 14,
-        fontWeight: "bold",
-        color: "#2563eb",
-        marginBottom: 10,
-        borderBottom: "1 solid #e5e7eb",
-        paddingBottom: 3,
-      },
-      infoItem: {
-        flexDirection: "row",
-        marginBottom: 5,
-      },
-      infoLabel: {
-        fontSize: 10,
-        fontWeight: "bold",
-        color: "#374151",
-        width: 60,
-      },
-      infoValue: {
-        fontSize: 10,
-        color: "#6b7280",
-        flex: 1,
-      },
-      itemsSection: {
-        marginBottom: 25,
-      },
-      itemsTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
-        color: "#1e3a8a",
-        textAlign: "center",
-        marginBottom: 15,
-        backgroundColor: "#2563eb",
-        color: "#ffffff",
-        padding: 10,
-      },
-      tableHeader: {
-        flexDirection: "row",
-        backgroundColor: "#f9fafb",
-        padding: 8,
-        borderBottom: "1 solid #e5e7eb",
-      },
-      tableRow: {
-        flexDirection: "row",
-        padding: 8,
-        borderBottom: "1 solid #e5e7eb",
-      },
-      tableCell: {
-        fontSize: 9,
-        color: "#374151",
-      },
-      tableCellHeader: {
-        fontSize: 10,
-        fontWeight: "bold",
-        color: "#374151",
-      },
-      productId: {
-        width: "15%",
-      },
-      description: {
-        width: "40%",
-      },
-      quantity: {
-        width: "15%",
-        textAlign: "center",
-      },
-      unitPrice: {
-        width: "15%",
-        textAlign: "right",
-      },
-      total: {
-        width: "15%",
-        textAlign: "right",
-        fontWeight: "bold",
-        color: "#2563eb",
-      },
-      totalSection: {
-        marginTop: 20,
-        alignItems: "flex-end",
-      },
-      totalRow: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        marginBottom: 5,
-        width: 250,
-      },
-      totalLabel: {
-        fontSize: 12,
-        fontWeight: "bold",
-        color: "#374151",
-        width: 100,
-        textAlign: "right",
-        marginRight: 15,
-      },
-      totalValue: {
-        fontSize: 12,
-        color: "#6b7280",
-        width: 100,
-        textAlign: "right",
-      },
-      grandTotal: {
-        borderTop: "2 solid #2563eb",
-        paddingTop: 10,
-        marginTop: 10,
-      },
-      grandTotalLabel: {
-        fontSize: 14,
-        fontWeight: "bold",
-        color: "#1e3a8a",
-      },
-      grandTotalValue: {
-        fontSize: 16,
-        fontWeight: "bold",
-        color: "#2563eb",
-      },
-      terms: {
-        backgroundColor: "#f9fafb",
-        padding: 15,
-        marginTop: 25,
-        borderLeft: "4 solid #2563eb",
-      },
-      termsTitle: {
-        fontSize: 12,
-        fontWeight: "bold",
-        color: "#1e3a8a",
-        marginBottom: 8,
-      },
-      termsText: {
-        fontSize: 9,
-        color: "#6b7280",
-        lineHeight: 1.4,
-      },
-      footer: {
-        marginTop: 30,
-        textAlign: "center",
-        borderTop: "2 solid #e5e7eb",
-        paddingTop: 20,
-      },
-      contactInfo: {
-        fontSize: 10,
-        color: "#6b7280",
-        lineHeight: 1.6,
-      },
+    // Create new PDF document
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
     })
 
-    // Create PDF document
-    const MyDocument = () =>
-      React.createElement(
-        Document,
-        null,
-        React.createElement(
-          Page,
-          { size: "A4", style: styles.page },
-          // Header
-          React.createElement(
-            View,
-            { style: styles.header },
-            React.createElement(Text, { style: styles.companyName }, "Inventory Portal"),
-            React.createElement(
-              Text,
-              { style: styles.companyTagline },
-              "Professional Inventory & Quotation Management",
-            ),
-            React.createElement(Text, { style: styles.quotationTitle }, "QUOTATION"),
-            React.createElement(
-              Text,
-              { style: styles.quotationNumber },
-              `#${quotation._id.toString().slice(-8).toUpperCase()} - ${quotation.status.toUpperCase()}`,
-            ),
-          ),
+    // Set font
+    doc.setFont("helvetica")
 
-          // Information Section
-          React.createElement(
-            View,
-            { style: styles.infoSection },
-            React.createElement(
-              View,
-              { style: styles.infoBlock },
-              React.createElement(Text, { style: styles.infoTitle }, "Bill To:"),
-              React.createElement(
-                View,
-                { style: styles.infoItem },
-                React.createElement(Text, { style: styles.infoLabel }, "Name:"),
-                React.createElement(Text, { style: styles.infoValue }, quotation.customerName),
-              ),
-              React.createElement(
-                View,
-                { style: styles.infoItem },
-                React.createElement(Text, { style: styles.infoLabel }, "Phone:"),
-                React.createElement(Text, { style: styles.infoValue }, quotation.customerPhone),
-              ),
-              React.createElement(
-                View,
-                { style: styles.infoItem },
-                React.createElement(Text, { style: styles.infoLabel }, "Address:"),
-                React.createElement(Text, { style: styles.infoValue }, quotation.customerAddress),
-              ),
-            ),
-            React.createElement(
-              View,
-              { style: styles.infoBlock },
-              React.createElement(Text, { style: styles.infoTitle }, "Quotation Details:"),
-              React.createElement(
-                View,
-                { style: styles.infoItem },
-                React.createElement(Text, { style: styles.infoLabel }, "Date:"),
-                React.createElement(
-                  Text,
-                  { style: styles.infoValue },
-                  new Date(quotation.createdAt).toLocaleDateString(),
-                ),
-              ),
-              React.createElement(
-                View,
-                { style: styles.infoItem },
-                React.createElement(Text, { style: styles.infoLabel }, "Valid Until:"),
-                React.createElement(
-                  Text,
-                  { style: styles.infoValue },
-                  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                ),
-              ),
-              React.createElement(
-                View,
-                { style: styles.infoItem },
-                React.createElement(Text, { style: styles.infoLabel }, "Status:"),
-                React.createElement(Text, { style: styles.infoValue }, quotation.status.toUpperCase()),
-              ),
-            ),
-          ),
+    // Colors
+    const primaryColor = [37, 99, 235] // Blue
+    const secondaryColor = [107, 114, 128] // Gray
+    const textColor = [31, 41, 55] // Dark gray
 
-          // Items Section
-          React.createElement(
-            View,
-            { style: styles.itemsSection },
-            React.createElement(Text, { style: styles.itemsTitle }, "Items & Services"),
+    // Header
+    doc.setFontSize(24)
+    doc.setTextColor(...primaryColor)
+    doc.text("Inventory Portal", 105, 25, { align: "center" })
 
-            // Table Header
-            React.createElement(
-              View,
-              { style: styles.tableHeader },
-              React.createElement(Text, { style: [styles.tableCellHeader, styles.productId] }, "Product ID"),
-              React.createElement(Text, { style: [styles.tableCellHeader, styles.description] }, "Description"),
-              React.createElement(Text, { style: [styles.tableCellHeader, styles.quantity] }, "Qty"),
-              React.createElement(Text, { style: [styles.tableCellHeader, styles.unitPrice] }, "Unit Price"),
-              React.createElement(Text, { style: [styles.tableCellHeader, styles.total] }, "Total"),
-            ),
+    doc.setFontSize(12)
+    doc.setTextColor(...secondaryColor)
+    doc.text("Professional Inventory & Quotation Management", 105, 35, { align: "center" })
 
-            // Table Rows
-            ...items.map((item, index) =>
-              React.createElement(
-                View,
-                {
-                  key: index,
-                  style: [styles.tableRow, { backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9fafb" }],
-                },
-                React.createElement(Text, { style: [styles.tableCell, styles.productId] }, item.productId),
-                React.createElement(Text, { style: [styles.tableCell, styles.description] }, item.productName),
-                React.createElement(Text, { style: [styles.tableCell, styles.quantity] }, item.quantity.toString()),
-                React.createElement(
-                  Text,
-                  { style: [styles.tableCell, styles.unitPrice] },
-                  `PKR ${item.price.toLocaleString()}`,
-                ),
-                React.createElement(
-                  Text,
-                  { style: [styles.tableCell, styles.total] },
-                  `PKR ${(item.quantity * item.price).toLocaleString()}`,
-                ),
-              ),
-            ),
-          ),
+    doc.setFontSize(20)
+    doc.setTextColor(...primaryColor)
+    doc.text("QUOTATION", 105, 50, { align: "center" })
 
-          // Total Section
-          React.createElement(
-            View,
-            { style: styles.totalSection },
-            React.createElement(
-              View,
-              { style: styles.totalRow },
-              React.createElement(Text, { style: styles.totalLabel }, "Subtotal:"),
-              React.createElement(Text, { style: styles.totalValue }, `PKR ${quotation.totalAmount.toLocaleString()}`),
-            ),
-            React.createElement(
-              View,
-              { style: styles.totalRow },
-              React.createElement(Text, { style: styles.totalLabel }, "Tax (0%):"),
-              React.createElement(Text, { style: styles.totalValue }, "PKR 0"),
-            ),
-            React.createElement(
-              View,
-              { style: [styles.totalRow, styles.grandTotal] },
-              React.createElement(Text, { style: styles.grandTotalLabel }, "Grand Total:"),
-              React.createElement(
-                Text,
-                { style: styles.grandTotalValue },
-                `PKR ${quotation.totalAmount.toLocaleString()}`,
-              ),
-            ),
-          ),
+    doc.setFontSize(12)
+    doc.setTextColor(...textColor)
+    doc.text(`#${quotation._id.toString().slice(-8).toUpperCase()}`, 105, 60, { align: "center" })
+    doc.text(`Status: ${quotation.status.toUpperCase()}`, 105, 68, { align: "center" })
 
-          // Terms and Conditions
-          React.createElement(
-            View,
-            { style: styles.terms },
-            React.createElement(Text, { style: styles.termsTitle }, "Terms & Conditions:"),
-            React.createElement(
-              Text,
-              { style: styles.termsText },
-              "• This quotation is valid for 30 days from the date of issue.\n" +
-                "• Prices are subject to change without prior notice.\n" +
-                "• Payment terms: 50% advance, 50% on delivery.\n" +
-                "• Delivery time: 7-14 business days after order confirmation.\n" +
-                "• All prices are in Pakistani Rupees (PKR).\n" +
-                "• Returns are accepted within 7 days of delivery in original condition.",
-            ),
-          ),
+    // Line separator
+    doc.setDrawColor(...primaryColor)
+    doc.setLineWidth(1)
+    doc.line(20, 75, 190, 75)
 
-          // Footer
-          React.createElement(
-            View,
-            { style: styles.footer },
-            React.createElement(
-              Text,
-              { style: styles.contactInfo },
-              "Inventory Portal\n" +
-                "Email: info@inventoryportal.com | Phone: +92-300-1234567\n" +
-                "Website: www.inventoryportal.com\n" +
-                "Thank you for your business!",
-            ),
-          ),
-        ),
-      )
+    let yPos = 90
 
-    // Generate PDF
-    const React = await import("react")
-    const pdfDoc = MyDocument()
-    const pdfBuffer = await pdf(pdfDoc).toBuffer()
+    // Customer Information
+    doc.setFontSize(14)
+    doc.setTextColor(...primaryColor)
+    doc.text("Bill To:", 20, yPos)
 
-    return pdfBuffer
+    doc.setFontSize(11)
+    doc.setTextColor(...textColor)
+    yPos += 8
+    doc.text(`Name: ${quotation.customerName}`, 20, yPos)
+    yPos += 6
+    doc.text(`Phone: ${quotation.customerPhone}`, 20, yPos)
+    yPos += 6
+    doc.text(`Address: ${quotation.customerAddress}`, 20, yPos)
+
+    // Quotation Details (right side)
+    doc.setFontSize(14)
+    doc.setTextColor(...primaryColor)
+    doc.text("Quotation Details:", 120, 90)
+
+    doc.setFontSize(11)
+    doc.setTextColor(...textColor)
+    doc.text(`Date: ${new Date(quotation.createdAt).toLocaleDateString()}`, 120, 98)
+    doc.text(`Valid Until: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}`, 120, 104)
+    doc.text(`Items: ${items.length}`, 120, 110)
+
+    yPos = Math.max(yPos, 110) + 15
+
+    // Items Table Header
+    doc.setFontSize(14)
+    doc.setTextColor(...primaryColor)
+    doc.text("Items & Services", 105, yPos, { align: "center" })
+    yPos += 10
+
+    // Table header background
+    doc.setFillColor(...primaryColor)
+    doc.rect(20, yPos - 5, 170, 8, "F")
+
+    doc.setFontSize(10)
+    doc.setTextColor(255, 255, 255) // White text
+    doc.text("Product ID", 22, yPos)
+    doc.text("Description", 55, yPos)
+    doc.text("Qty", 120, yPos)
+    doc.text("Unit Price", 135, yPos)
+    doc.text("Total", 165, yPos)
+
+    yPos += 12
+
+    // Table rows
+    doc.setTextColor(...textColor)
+    let totalAmount = 0
+
+    items.forEach((item, index) => {
+      const rowTotal = item.quantity * item.price
+      totalAmount += rowTotal
+
+      // Alternate row background
+      if (index % 2 === 0) {
+        doc.setFillColor(249, 250, 251) // Light gray
+        doc.rect(20, yPos - 4, 170, 7, "F")
+      }
+
+      doc.setFontSize(9)
+      doc.text(item.productId.toString(), 22, yPos)
+      doc.text(item.productName.substring(0, 25), 55, yPos) // Truncate long names
+      doc.text(item.quantity.toString(), 122, yPos)
+      doc.text(`PKR ${item.price.toLocaleString()}`, 137, yPos)
+      doc.text(`PKR ${rowTotal.toLocaleString()}`, 167, yPos)
+
+      yPos += 7
+
+      // Check if we need a new page
+      if (yPos > 250) {
+        doc.addPage()
+        yPos = 20
+      }
+    })
+
+    yPos += 10
+
+    // Total Section
+    doc.setDrawColor(...primaryColor)
+    doc.setLineWidth(0.5)
+    doc.line(120, yPos, 190, yPos)
+    yPos += 8
+
+    doc.setFontSize(11)
+    doc.setTextColor(...textColor)
+    doc.text("Subtotal:", 140, yPos)
+    doc.text(`PKR ${quotation.totalAmount.toLocaleString()}`, 170, yPos)
+    yPos += 6
+
+    doc.text("Tax (0%):", 140, yPos)
+    doc.text("PKR 0", 170, yPos)
+    yPos += 8
+
+    // Grand Total
+    doc.setDrawColor(...primaryColor)
+    doc.setLineWidth(1)
+    doc.line(120, yPos, 190, yPos)
+    yPos += 8
+
+    doc.setFontSize(14)
+    doc.setTextColor(...primaryColor)
+    doc.text("Grand Total:", 140, yPos)
+    doc.text(`PKR ${quotation.totalAmount.toLocaleString()}`, 170, yPos)
+
+    yPos += 20
+
+    // Terms and Conditions
+    if (yPos > 220) {
+      doc.addPage()
+      yPos = 20
+    }
+
+    doc.setFontSize(12)
+    doc.setTextColor(...primaryColor)
+    doc.text("Terms & Conditions:", 20, yPos)
+    yPos += 8
+
+    doc.setFontSize(9)
+    doc.setTextColor(...textColor)
+    const terms = [
+      "• This quotation is valid for 30 days from the date of issue.",
+      "• Prices are subject to change without prior notice.",
+      "• Payment terms: 50% advance, 50% on delivery.",
+      "• Delivery time: 7-14 business days after order confirmation.",
+      "• All prices are in Pakistani Rupees (PKR).",
+      "• Returns are accepted within 7 days of delivery in original condition.",
+    ]
+
+    terms.forEach((term) => {
+      doc.text(term, 20, yPos)
+      yPos += 5
+    })
+
+    yPos += 10
+
+    // Footer
+    doc.setDrawColor(...secondaryColor)
+    doc.setLineWidth(0.5)
+    doc.line(20, yPos, 190, yPos)
+    yPos += 8
+
+    doc.setFontSize(12)
+    doc.setTextColor(...primaryColor)
+    doc.text("Inventory Portal", 105, yPos, { align: "center" })
+    yPos += 6
+
+    doc.setFontSize(9)
+    doc.setTextColor(...secondaryColor)
+    doc.text("Email: info@inventoryportal.com | Phone: +92-300-1234567", 105, yPos, { align: "center" })
+    yPos += 4
+    doc.text("Website: www.inventoryportal.com", 105, yPos, { align: "center" })
+    yPos += 6
+    doc.text("Thank you for your business!", 105, yPos, { align: "center" })
+
+    // Convert to buffer
+    const pdfArrayBuffer = doc.output("arraybuffer")
+    return Buffer.from(pdfArrayBuffer)
   } catch (error) {
-    console.error("React PDF generation failed:", error)
-    throw new Error("PDF generation failed")
+    console.error("jsPDF generation failed:", error)
+
+    // Ultimate fallback - create a simple text-based PDF
+    return createSimpleTextPDF(quotation, items)
   }
 }
 
-function generateQuotationHTML(quotation: any, items: any[]) {
-  const quotationDate = new Date(quotation.createdAt).toLocaleDateString()
+function createSimpleTextPDF(quotation: any, items: any[]): Buffer {
+  // Create a proper PDF with basic structure
+  const content = `
+INVENTORY PORTAL
+Professional Inventory & Quotation Management
 
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quotation - ${quotation.customerName}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #fff;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 20px;
-        }
-        
-        .company-name {
-            font-size: 32px;
-            font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 10px;
-        }
-        
-        .company-tagline {
-            font-size: 16px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-        
-        .quotation-title {
-            font-size: 28px;
-            font-weight: bold;
-            color: #1e3a8a;
-            margin-bottom: 10px;
-        }
-        
-        .quotation-number {
-            font-size: 16px;
-            color: #666;
-            background: #f3f4f6;
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: inline-block;
-        }
-        
-        .info-section {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 40px;
-            gap: 40px;
-        }
-        
-        .info-block {
-            flex: 1;
-        }
-        
-        .info-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 5px;
-        }
-        
-        .info-item {
-            margin-bottom: 8px;
-            display: flex;
-        }
-        
-        .info-label {
-            font-weight: bold;
-            color: #374151;
-            min-width: 80px;
-        }
-        
-        .info-value {
-            color: #6b7280;
-        }
-        
-        .items-section {
-            margin-bottom: 40px;
-        }
-        
-        .items-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #1e3a8a;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .items-table th {
-            background: linear-gradient(135deg, #2563eb, #1e3a8a);
-            color: white;
-            padding: 15px 12px;
-            text-align: left;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        .items-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 14px;
-        }
-        
-        .items-table tr:nth-child(even) {
-            background-color: #f9fafb;
-        }
-        
-        .items-table tr:hover {
-            background-color: #f3f4f6;
-        }
-        
-        .text-right {
-            text-align: right;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .total-section {
-            margin-top: 30px;
-            text-align: right;
-        }
-        
-        .total-row {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        
-        .total-label {
-            font-weight: bold;
-            color: #374151;
-            min-width: 150px;
-            text-align: right;
-            margin-right: 20px;
-        }
-        
-        .total-value {
-            color: #6b7280;
-            min-width: 120px;
-            text-align: right;
-        }
-        
-        .grand-total {
-            border-top: 2px solid #2563eb;
-            padding-top: 15px;
-            margin-top: 15px;
-        }
-        
-        .grand-total .total-label {
-            font-size: 20px;
-            color: #1e3a8a;
-        }
-        
-        .grand-total .total-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2563eb;
-        }
-        
-        .footer {
-            margin-top: 60px;
-            text-align: center;
-            border-top: 2px solid #e5e7eb;
-            padding-top: 30px;
-        }
-        
-        .terms {
-            background: #f9fafb;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-left: 4px solid #2563eb;
-        }
-        
-        .terms-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #1e3a8a;
-            margin-bottom: 10px;
-        }
-        
-        .terms-text {
-            font-size: 14px;
-            color: #6b7280;
-            line-height: 1.6;
-        }
-        
-        .contact-info {
-            font-size: 14px;
-            color: #6b7280;
-            line-height: 1.8;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .status-sent {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .currency {
-            font-weight: bold;
-            color: #2563eb;
-        }
-        
-        @media print {
-            .container {
-                padding: 20px;
-            }
-            
-            .header {
-                margin-bottom: 30px;
-            }
-            
-            .info-section {
-                margin-bottom: 30px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="company-name">Inventory Portal</div>
-            <div class="company-tagline">Professional Inventory & Quotation Management</div>
-            <div class="quotation-title">QUOTATION</div>
-            <div class="quotation-number">
-                #${quotation._id.toString().slice(-8).toUpperCase()}
-                <span class="status-badge status-${quotation.status}">${quotation.status}</span>
-            </div>
-        </div>
+QUOTATION #${quotation._id.toString().slice(-8).toUpperCase()}
+Status: ${quotation.status.toUpperCase()}
 
-        <!-- Information Section -->
-        <div class="info-section">
-            <div class="info-block">
-                <div class="info-title">Bill To:</div>
-                <div class="info-item">
-                    <span class="info-label">Name:</span>
-                    <span class="info-value">${quotation.customerName}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Phone:</span>
-                    <span class="info-value">${quotation.customerPhone}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Address:</span>
-                    <span class="info-value">${quotation.customerAddress}</span>
-                </div>
-            </div>
-            
-            <div class="info-block">
-                <div class="info-title">Quotation Details:</div>
-                <div class="info-item">
-                    <span class="info-label">Date:</span>
-                    <span class="info-value">${quotationDate}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Valid Until:</span>
-                    <span class="info-value">${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Status:</span>
-                    <span class="info-value">${quotation.status.toUpperCase()}</span>
-                </div>
-            </div>
-        </div>
+BILL TO:
+Name: ${quotation.customerName}
+Phone: ${quotation.customerPhone}
+Address: ${quotation.customerAddress}
 
-        <!-- Items Section -->
-        <div class="items-section">
-            <div class="items-title">Items & Services</div>
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th style="width: 15%">Product ID</th>
-                        <th style="width: 40%">Description</th>
-                        <th style="width: 15%" class="text-center">Quantity</th>
-                        <th style="width: 15%" class="text-right">Unit Price</th>
-                        <th style="width: 15%" class="text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${items
-                      .map(
-                        (item, index) => `
-                        <tr>
-                            <td><strong>${item.productId}</strong></td>
-                            <td>${item.productName}</td>
-                            <td class="text-center">${item.quantity}</td>
-                            <td class="text-right"><span class="currency">PKR ${item.price.toLocaleString()}</span></td>
-                            <td class="text-right"><span class="currency">PKR ${(item.quantity * item.price).toLocaleString()}</span></td>
-                        </tr>
-                    `,
-                      )
-                      .join("")}
-                </tbody>
-            </table>
-        </div>
+QUOTATION DETAILS:
+Date: ${new Date(quotation.createdAt).toLocaleDateString()}
+Valid Until: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
 
-        <!-- Total Section -->
-        <div class="total-section">
-            <div class="total-row">
-                <div class="total-label">Subtotal:</div>
-                <div class="total-value"><span class="currency">PKR ${quotation.totalAmount.toLocaleString()}</span></div>
-            </div>
-            <div class="total-row">
-                <div class="total-label">Tax (0%):</div>
-                <div class="total-value"><span class="currency">PKR 0</span></div>
-            </div>
-            <div class="total-row grand-total">
-                <div class="total-label">Grand Total:</div>
-                <div class="total-value"><span class="currency">PKR ${quotation.totalAmount.toLocaleString()}</span></div>
-            </div>
-        </div>
+ITEMS & SERVICES:
+${items
+  .map(
+    (item, index) =>
+      `${index + 1}. ${item.productId} - ${item.productName}
+     Quantity: ${item.quantity} | Unit Price: PKR ${item.price.toLocaleString()} | Total: PKR ${(item.quantity * item.price).toLocaleString()}`,
+  )
+  .join("\n")}
 
-        <!-- Terms and Conditions -->
-        <div class="terms">
-            <div class="terms-title">Terms & Conditions:</div>
-            <div class="terms-text">
-                • This quotation is valid for 30 days from the date of issue.<br>
-                • Prices are subject to change without prior notice.<br>
-                • Payment terms: 50% advance, 50% on delivery.<br>
-                • Delivery time: 7-14 business days after order confirmation.<br>
-                • All prices are in Pakistani Rupees (PKR).<br>
-                • Returns are accepted within 7 days of delivery in original condition.
-            </div>
-        </div>
+TOTAL SUMMARY:
+Subtotal: PKR ${quotation.totalAmount.toLocaleString()}
+Tax (0%): PKR 0
+Grand Total: PKR ${quotation.totalAmount.toLocaleString()}
 
-        <!-- Footer -->
-        <div class="footer">
-            <div class="contact-info">
-                <strong>Inventory Portal</strong><br>
-                Email: info@inventoryportal.com | Phone: +92-300-1234567<br>
-                Website: www.inventoryportal.com<br>
-                <em>Thank you for your business!</em>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-  `
+TERMS & CONDITIONS:
+• This quotation is valid for 30 days from the date of issue.
+• Prices are subject to change without prior notice.
+• Payment terms: 50% advance, 50% on delivery.
+• Delivery time: 7-14 business days after order confirmation.
+• All prices are in Pakistani Rupees (PKR).
+• Returns are accepted within 7 days of delivery in original condition.
+
+CONTACT:
+Inventory Portal
+Email: info@inventoryportal.com | Phone: +92-300-1234567
+Website: www.inventoryportal.com
+Thank you for your business!
+`
+
+  // Create a proper PDF structure
+  const pdfHeader = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+
+5 0 obj
+<< /Length ${content.length + 100} >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+`
+
+  const pdfContent = content
+    .split("\n")
+    .map((line, index) => {
+      const yPos = 750 - index * 15
+      return `(${line.replace(/[()\\]/g, "")}) Tj 0 -15 Td`
+    })
+    .join("\n")
+
+  const pdfFooter = `
+ET
+endstream
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000274 00000 n 
+0000000351 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+${600 + content.length}
+%%EOF`
+
+  const fullPdf = pdfHeader + pdfContent + pdfFooter
+  return Buffer.from(fullPdf, "utf-8")
 }
