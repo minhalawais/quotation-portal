@@ -1,7 +1,7 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Download, Phone, MapPin, Calendar, Clock, FileText, ArrowLeft } from "lucide-react"
+import { Download, Phone, MapPin, Calendar, Clock, FileText, ArrowLeft, Building2, Mail, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
@@ -36,11 +36,11 @@ export default function PublicQuotationView({ quotation }: PublicQuotationViewPr
   const getStatusColor = (status: string) => {
     switch (status) {
       case "sent":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "status-sent"
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "status-pending"
       case "cancelled":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "status-cancelled"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -49,7 +49,6 @@ export default function PublicQuotationView({ quotation }: PublicQuotationViewPr
   const handleDownload = async () => {
     setDownloading(true)
     try {
-      // Use the public PDF endpoint that doesn't require authentication
       const response = await fetch(`/api/public/quotations/${quotation._id}/pdf`)
       if (response.ok) {
         const blob = await response.blob()
@@ -83,22 +82,31 @@ export default function PublicQuotationView({ quotation }: PublicQuotationViewPr
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-muted to-muted/50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto mobile-container py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => router.back()} className="hover:bg-gray-100">
+              <Button variant="outline" size="sm" onClick={() => router.back()} className="mobile-button">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Inventory Portal</h1>
-                <p className="text-sm text-gray-600">Quotation View</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-secondary">Inventory Portal</h1>
+                  <p className="text-sm text-muted-foreground">Professional Quotation</p>
+                </div>
               </div>
             </div>
-            <Button onClick={handleDownload} disabled={downloading} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="btn-primary mobile-button w-full sm:w-auto"
+            >
               <Download className="mr-2 h-4 w-4" />
               {downloading ? "Downloading..." : "Download PDF"}
             </Button>
@@ -107,24 +115,27 @@ export default function PublicQuotationView({ quotation }: PublicQuotationViewPr
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="max-w-5xl mx-auto mobile-container py-8">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border">
           {/* Quotation Header */}
-          <div className="text-center mb-6 sm:mb-8 border-b-2 border-blue-600 pb-4 sm:pb-6 px-4 sm:px-8 pt-4 sm:pt-8">
-            <div className="mb-4">
-              <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">Inventory Portal</h1>
-              <p className="text-sm sm:text-base text-gray-600 mb-4">Professional Inventory & Quotation Management</p>
+          <div className="gradient-primary text-white p-8 text-center">
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-8 w-8 text-white" />
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-bold mb-2">Inventory Portal</h1>
+              <p className="text-primary-foreground/80">Professional Inventory & Quotation Management</p>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 mb-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-blue-900 mb-3">QUOTATION</h2>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto">
+              <h2 className="text-2xl font-bold mb-4">QUOTATION</h2>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <div className="bg-white px-4 py-2 rounded-full shadow-sm">
-                  <span className="text-sm font-mono font-semibold text-gray-700">
+                <div className="bg-white px-4 py-2 rounded-full">
+                  <span className="text-sm font-mono font-bold text-secondary">
                     #{quotation._id.slice(-8).toUpperCase()}
                   </span>
                 </div>
-                <Badge className={`${getStatusColor(quotation.status)} px-3 py-1 text-sm font-medium`}>
+                <Badge className={`${getStatusColor(quotation.status)} px-4 py-2 text-sm font-semibold`}>
                   {quotation.status.toUpperCase()}
                 </Badge>
               </div>
@@ -132,20 +143,20 @@ export default function PublicQuotationView({ quotation }: PublicQuotationViewPr
           </div>
 
           {/* Information Section */}
-          <div className="px-4 sm:px-8 mb-6 sm:mb-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          <div className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Customer Information */}
-              <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-blue-600 mb-4 flex items-center gap-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-sm">B</span>
+              <div className="bg-muted/30 rounded-xl p-6 border">
+                <h3 className="text-xl font-bold text-secondary mb-6 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <span className="text-primary font-bold">B</span>
                   </div>
-                  Bill To:
+                  Bill To
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 text-gray-500 mt-0.5 shrink-0">
-                      <svg fill="currentColor" viewBox="0 0 20 20">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mt-1">
+                      <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fillRule="evenodd"
                           d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
@@ -153,226 +164,243 @@ export default function PublicQuotationView({ quotation }: PublicQuotationViewPr
                         />
                       </svg>
                     </div>
-                    <div>
-                      <span className="font-semibold text-gray-700 text-sm">Name:</span>
-                      <p className="text-gray-900 font-medium">{quotation.customerName}</p>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Customer Name</p>
+                      <p className="text-lg font-semibold text-secondary">{quotation.customerName}</p>
                     </div>
                   </div>
+
                   <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="font-semibold text-gray-700 text-sm">Phone:</span>
-                      <p className="text-gray-900 font-medium">{quotation.customerPhone}</p>
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mt-1">
+                      <Phone className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Phone Number</p>
+                      <p className="text-lg font-semibold text-secondary">{quotation.customerPhone}</p>
                     </div>
                   </div>
+
                   <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="font-semibold text-gray-700 text-sm">Address:</span>
-                      <p className="text-gray-900 font-medium break-words">{quotation.customerAddress}</p>
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mt-1">
+                      <MapPin className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">Address</p>
+                      <p className="text-lg font-semibold text-secondary break-words">{quotation.customerAddress}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Quotation Details */}
-              <div className="bg-blue-50 rounded-lg p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-blue-600 mb-4 flex items-center gap-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-blue-600" />
+              <div className="bg-primary/5 rounded-xl p-6 border border-primary/20">
+                <h3 className="text-xl font-bold text-secondary mb-6 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-primary" />
                   </div>
-                  Quotation Details:
+                  Quotation Details
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-gray-500 shrink-0" />
+                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-4 h-4 text-primary" />
+                    </div>
                     <div>
-                      <span className="font-semibold text-gray-700 text-sm">Date:</span>
-                      <p className="text-gray-900 font-medium">{new Date(quotation.createdAt).toLocaleDateString()}</p>
+                      <p className="text-sm font-medium text-muted-foreground">Issue Date</p>
+                      <p className="text-lg font-semibold text-secondary">
+                        {new Date(quotation.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-gray-500 shrink-0" />
+                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-primary" />
+                    </div>
                     <div>
-                      <span className="font-semibold text-gray-700 text-sm">Valid Until:</span>
-                      <p className="text-gray-900 font-medium">
+                      <p className="text-sm font-medium text-muted-foreground">Valid Until</p>
+                      <p className="text-lg font-semibold text-secondary">
                         {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                       <div
                         className={`w-3 h-3 rounded-full ${
                           quotation.status === "sent"
-                            ? "bg-green-500"
+                            ? "bg-success"
                             : quotation.status === "pending"
                               ? "bg-yellow-500"
-                              : "bg-red-500"
+                              : "bg-destructive"
                         }`}
                       />
                     </div>
                     <div>
-                      <span className="font-semibold text-gray-700 text-sm">Status:</span>
-                      <p className="text-gray-900 font-medium uppercase">{quotation.status}</p>
+                      <p className="text-sm font-medium text-muted-foreground">Status</p>
+                      <p className="text-lg font-semibold text-secondary uppercase">{quotation.status}</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Items Section */}
-          <div className="px-4 sm:px-8 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-t-lg p-4 text-center">
-              <h3 className="text-lg sm:text-xl font-bold text-white">Items & Services</h3>
-            </div>
+            {/* Items Section */}
+            <div className="mb-8">
+              <div className="gradient-primary rounded-t-xl p-6 text-center">
+                <h3 className="text-xl font-bold text-white">Items & Services</h3>
+              </div>
 
-            {/* Desktop Table */}
-            <div className="hidden sm:block overflow-x-auto bg-white border border-t-0 rounded-b-lg">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Product ID</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Qty</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Unit Price</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {quotation.items.map((item, index) => (
-                    <tr key={index} className={`border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-                      <td className="px-4 py-3 font-mono text-sm font-semibold text-blue-600">{item.productId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.productName || "Product"}</td>
-                      <td className="px-4 py-3 text-center text-sm font-semibold">{item.quantity}</td>
-                      <td className="px-4 py-3 text-right text-sm font-semibold text-blue-600">
-                        PKR {item.price.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm font-bold text-blue-600">
-                        PKR {(item.quantity * item.price).toLocaleString()}
-                      </td>
+              {/* Desktop Table */}
+              <div className="hidden sm:block overflow-x-auto bg-white border-x border-b rounded-b-xl">
+                <table className="table-modern">
+                  <thead>
+                    <tr>
+                      <th>Product ID</th>
+                      <th>Description</th>
+                      <th className="text-center">Qty</th>
+                      <th className="text-right">Unit Price</th>
+                      <th className="text-right">Total</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {quotation.items.map((item, index) => (
+                      <tr key={index}>
+                        <td className="font-mono text-sm font-bold text-primary">{item.productId}</td>
+                        <td className="font-medium">{item.productName || "Product"}</td>
+                        <td className="text-center font-semibold">{item.quantity}</td>
+                        <td className="text-right font-semibold text-primary">PKR {item.price.toLocaleString()}</td>
+                        <td className="text-right font-bold text-primary">
+                          PKR {(item.quantity * item.price).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="sm:hidden bg-white border-x border-b rounded-b-xl divide-y">
+                {quotation.items.map((item, index) => (
+                  <div key={index} className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <p className="font-mono text-sm font-bold text-primary mb-1">{item.productId}</p>
+                        <p className="font-semibold text-secondary">{item.productName || "Product"}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Quantity</p>
+                        <p className="font-bold text-lg">{item.quantity}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Unit Price</p>
+                        <p className="font-semibold text-primary">PKR {item.price.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Total</p>
+                        <p className="font-bold text-lg text-primary">
+                          PKR {(item.quantity * item.price).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Mobile Cards */}
-            <div className="sm:hidden bg-white border border-t-0 rounded-b-lg">
-              {quotation.items.map((item, index) => (
-                <div
-                  key={index}
-                  className={`p-4 border-b last:border-b-0 ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-mono text-sm font-semibold text-blue-600">{item.productId}</p>
-                      <p className="text-sm text-gray-900 font-medium">{item.productName || "Product"}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">Qty: {item.quantity}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Unit Price:</span>
-                    <span className="text-sm font-semibold text-blue-600">PKR {item.price.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center mt-1 pt-2 border-t border-gray-200">
-                    <span className="text-sm font-semibold text-gray-700">Total:</span>
-                    <span className="text-base font-bold text-blue-600">
-                      PKR {(item.quantity * item.price).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Total Section */}
-          <div className="px-4 sm:px-8 mb-6 sm:mb-8">
-            <div className="flex justify-end">
-              <div className="w-full sm:w-80 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 sm:p-6 border border-blue-200">
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2">
-                    <span className="font-semibold text-gray-700">Subtotal:</span>
-                    <span className="font-semibold text-blue-600">PKR {quotation.totalAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="font-semibold text-gray-700">Tax (0%):</span>
-                    <span className="font-semibold text-blue-600">PKR 0</span>
-                  </div>
-                  <div className="border-t-2 border-blue-600 pt-3 mt-3">
+            {/* Total Section */}
+            <div className="mb-8">
+              <div className="flex justify-end">
+                <div className="w-full sm:w-96 gradient-primary rounded-xl p-6 text-white">
+                  <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg sm:text-xl font-bold text-blue-900">Grand Total:</span>
-                      <span className="text-xl sm:text-2xl font-bold text-blue-600">
-                        PKR {quotation.totalAmount.toLocaleString()}
-                      </span>
+                      <span className="font-semibold">Subtotal:</span>
+                      <span className="font-semibold">PKR {quotation.totalAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">Tax (0%):</span>
+                      <span className="font-semibold">PKR 0</span>
+                    </div>
+                    <div className="border-t-2 border-white/20 pt-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xl font-bold">Grand Total:</span>
+                        <span className="text-2xl font-bold">PKR {quotation.totalAmount.toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Terms and Conditions */}
-          <div className="px-4 sm:px-8 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-400 rounded-lg p-4 sm:p-6">
-              <h4 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
-                <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
-                  <span className="text-amber-600 text-xs">!</span>
-                </div>
-                Terms & Conditions:
-              </h4>
-              <div className="text-sm text-gray-700 space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold mt-1">•</span>
-                  <p>This quotation is valid for 30 days from the date of issue.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold mt-1">•</span>
-                  <p>Prices are subject to change without prior notice.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold mt-1">•</span>
-                  <p>Payment terms: 50% advance, 50% on delivery.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold mt-1">•</span>
-                  <p>Delivery time: 7-14 business days after order confirmation.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold mt-1">•</span>
-                  <p>All prices are in Pakistani Rupees (PKR).</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 font-bold mt-1">•</span>
-                  <p>Returns are accepted within 7 days of delivery in original condition.</p>
+            {/* Terms and Conditions */}
+            <div className="mb-8">
+              <div className="alert-warning rounded-xl">
+                <h4 className="font-bold text-yellow-800 mb-4 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-yellow-200 rounded-lg flex items-center justify-center">
+                    <span className="text-yellow-600 font-bold">!</span>
+                  </div>
+                  Terms & Conditions
+                </h4>
+                <div className="text-sm text-yellow-800 space-y-3 ml-11">
+                  <div className="flex items-start gap-3">
+                    <span className="text-yellow-600 font-bold mt-1">•</span>
+                    <p>This quotation is valid for 30 days from the date of issue.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-yellow-600 font-bold mt-1">•</span>
+                    <p>Prices are subject to change without prior notice.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-yellow-600 font-bold mt-1">•</span>
+                    <p>Payment terms: 50% advance, 50% on delivery.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-yellow-600 font-bold mt-1">•</span>
+                    <p>Delivery time: 7-14 business days after order confirmation.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-yellow-600 font-bold mt-1">•</span>
+                    <p>All prices are in Pakistani Rupees (PKR).</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-yellow-600 font-bold mt-1">•</span>
+                    <p>Returns are accepted within 7 days of delivery in original condition.</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Footer */}
-          <div className="px-4 sm:px-8 pb-4 sm:pb-8">
-            <div className="text-center border-t-2 border-gray-200 pt-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 sm:p-6">
-              <div className="mb-4">
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-white font-bold text-xl">IP</span>
+            {/* Footer */}
+            <div className="text-center bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl p-8 border">
+              <div className="mb-6">
+                <div className="w-20 h-20 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white font-bold text-2xl">IP</span>
                 </div>
-                <h4 className="font-bold text-gray-900 text-lg">Inventory Portal</h4>
+                <h4 className="font-bold text-secondary text-xl mb-2">Inventory Portal</h4>
+                <p className="text-muted-foreground">Professional Business Solutions</p>
               </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p className="flex items-center justify-center gap-2">
-                  <span>📧</span> info@inventoryportal.com
-                </p>
-                <p className="flex items-center justify-center gap-2">
-                  <span>📱</span> +92-300-1234567
-                </p>
-                <p className="flex items-center justify-center gap-2">
-                  <span>🌐</span> www.inventoryportal.com
-                </p>
-                <p className="italic mt-3 text-blue-600 font-medium">Thank you for your business!</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  <span>info@inventoryportal.com</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  <span>+92-300-1234567</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  <span>www.inventoryportal.com</span>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <p className="text-primary font-semibold">Thank you for your business!</p>
               </div>
             </div>
           </div>

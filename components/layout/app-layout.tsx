@@ -30,27 +30,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   if (!session || pathname.startsWith("/auth")) {
-    return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">{children}</div>
+    return <div className="min-h-screen bg-gradient-to-br from-muted via-muted/50 to-primary/5">{children}</div>
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-muted overflow-hidden">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
-        {/* Main content with mobile-optimized spacing */}
-        <main className="flex-1 overflow-auto custom-scrollbar bg-gray-50">
-          <div className="fade-in px-4 py-4 lg:px-6 lg:py-6">{children}</div>
+        {/* Main content with enhanced mobile spacing */}
+        <main className="flex-1 overflow-auto custom-scrollbar bg-muted safe-area-bottom">
+          <div className="fade-in mobile-container py-6 lg:py-8 min-h-full">
+            <div className="max-w-7xl mx-auto">{children}</div>
+          </div>
         </main>
       </div>
 
-      {/* Mobile overlay - improved */}
+      {/* Enhanced mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-all duration-300 ease-in-out"
           onClick={() => setSidebarOpen(false)}
           onTouchStart={() => setSidebarOpen(false)}
         />

@@ -4,7 +4,19 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Download, Send, Eye, MessageCircle, Phone, MapPin, Share2 } from "lucide-react"
+import {
+  FileText,
+  Download,
+  Send,
+  Eye,
+  MessageCircle,
+  Phone,
+  MapPin,
+  Share2,
+  Calendar,
+  DollarSign,
+  Package,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useSession } from "next-auth/react"
 import { logActivity } from "@/lib/logger"
@@ -66,7 +78,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
     setSelectedQuotation(quotation)
     setViewModalOpen(true)
 
-    // Log view activity
     if (session) {
       await logActivity({
         userId: session.user.id,
@@ -85,7 +96,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
     setSelectedQuotation(quotation)
     setPreviewModalOpen(true)
 
-    // Log preview activity
     if (session) {
       await logActivity({
         userId: session.user.id,
@@ -112,7 +122,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
         a.click()
         window.URL.revokeObjectURL(url)
 
-        // Log download activity
         if (session) {
           await logActivity({
             userId: session.user.id,
@@ -134,7 +143,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
         throw new Error("Failed to download PDF")
       }
     } catch (error) {
-      // Log error activity
       if (session) {
         await logActivity({
           userId: session.user.id,
@@ -158,22 +166,13 @@ export default function QuotationList({ userRole }: QuotationListProps) {
 
   const handleWhatsAppShare = async (quotation: Quotation) => {
     try {
-      // Format phone number for WhatsApp
       const formattedPhone = formatPhoneForWhatsApp(quotation.customerPhone)
-
-      // Generate quotation URL
       const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
-
-      // Generate WhatsApp message
       const message = generateWhatsAppMessage(quotation, quotationUrl)
-
-      // Create WhatsApp URL
       const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
 
-      // Open WhatsApp
       window.open(whatsappUrl, "_blank")
 
-      // Log share activity
       if (session) {
         await logActivity({
           userId: session.user.id,
@@ -192,7 +191,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
         description: "WhatsApp opened with quotation link",
       })
     } catch (error) {
-      // Log error activity
       if (session) {
         await logActivity({
           userId: session.user.id,
@@ -224,7 +222,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
         description: "Quotation link copied to clipboard",
       })
 
-      // Log copy link activity
       if (session) {
         await logActivity({
           userId: session.user.id,
@@ -253,10 +250,8 @@ export default function QuotationList({ userRole }: QuotationListProps) {
       })
 
       if (response.ok) {
-        // Update quotation status
         setQuotations(quotations.map((q) => (q._id === quotation._id ? { ...q, status: "sent" } : q)))
 
-        // Log send activity
         if (session) {
           await logActivity({
             userId: session.user.id,
@@ -278,7 +273,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
         throw new Error("Failed to send quotation")
       }
     } catch (error) {
-      // Log error activity
       if (session) {
         await logActivity({
           userId: session.user.id,
@@ -303,11 +297,11 @@ export default function QuotationList({ userRole }: QuotationListProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "sent":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "status-sent"
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "status-pending"
       case "cancelled":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "status-cancelled"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -315,13 +309,13 @@ export default function QuotationList({ userRole }: QuotationListProps) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 px-4 lg:px-0">
+      <div className="mobile-grid">
         {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-4">
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+          <Card key={i} className="card-modern animate-pulse">
+            <CardContent className="mobile-card">
+              <div className="h-4 bg-gray-200 rounded mb-3"></div>
               <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
-              <div className="h-8 bg-gray-200 rounded"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
             </CardContent>
           </Card>
         ))}
@@ -331,47 +325,66 @@ export default function QuotationList({ userRole }: QuotationListProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 px-4 lg:px-0">
+      <div className="mobile-grid">
         {quotations.map((quotation) => (
-          <Card key={quotation._id} className="card-hover bg-white shadow-sm border-0">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
+          <Card key={quotation._id} className="card-modern group hover:shadow-lg transition-all duration-300">
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg font-semibold truncate">{quotation.customerName}</CardTitle>
-                  <div className="flex items-center text-sm text-gray-600 mt-1">
-                    <Phone className="h-3 w-3 mr-1" />
-                    <span className="truncate">{quotation.customerPhone}</span>
-                  </div>
-                  <div className="flex items-start text-sm text-gray-600 mt-1">
-                    <MapPin className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
-                    <span className="line-clamp-2 text-xs">{quotation.customerAddress}</span>
+                  <CardTitle className="text-lg font-semibold text-secondary truncate mb-2">
+                    {quotation.customerName}
+                  </CardTitle>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Phone className="h-3 w-3 mr-2 flex-shrink-0" />
+                      <span className="truncate">{quotation.customerPhone}</span>
+                    </div>
+
+                    <div className="flex items-start text-sm text-muted-foreground">
+                      <MapPin className="h-3 w-3 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="line-clamp-2 text-xs leading-relaxed">{quotation.customerAddress}</span>
+                    </div>
                   </div>
                 </div>
-                <Badge className={getStatusColor(quotation.status)}>{quotation.status}</Badge>
+
+                <Badge className={`${getStatusColor(quotation.status)} font-medium`}>{quotation.status}</Badge>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Total Amount:</span>
-                  <span className="text-xl font-bold text-blue-600">PKR {quotation.totalAmount.toLocaleString()}</span>
+              {/* Amount and Stats */}
+              <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-secondary">Total Amount</span>
+                  </div>
+                  <span className="text-xl font-bold text-primary">PKR {quotation.totalAmount.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-500">Items: {quotation.items.length}</span>
-                  <span className="text-xs text-gray-500">{new Date(quotation.createdAt).toLocaleDateString()}</span>
+
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Package className="h-3 w-3" />
+                    <span>Items: {quotation.items.length}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date(quotation.createdAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              {/* Action Buttons */}
+              <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleView(quotation)}
-                    className="hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 h-9"
+                    className="mobile-button hover:bg-primary/5 hover:border-primary/30 hover:text-primary"
                   >
-                    <Eye className="mr-1 h-4 w-4" />
+                    <Eye className="mr-2 h-4 w-4" />
                     View
                   </Button>
 
@@ -379,9 +392,9 @@ export default function QuotationList({ userRole }: QuotationListProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => handlePreview(quotation)}
-                    className="hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 h-9"
+                    className="mobile-button hover:bg-secondary/5 hover:border-secondary/30 hover:text-secondary"
                   >
-                    <FileText className="mr-1 h-4 w-4" />
+                    <FileText className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
                 </div>
@@ -391,30 +404,33 @@ export default function QuotationList({ userRole }: QuotationListProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => handleDownload(quotation)}
-                    className="hover:bg-green-50 hover:border-green-200 hover:text-green-700 h-9"
+                    className="mobile-button hover:bg-success/5 hover:border-success/30 hover:text-success"
                   >
                     <Download className="mr-1 h-4 w-4" />
-                    PDF
+                    <span className="hidden sm:inline">PDF</span>
+                    <span className="sm:hidden">PDF</span>
                   </Button>
 
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleWhatsAppShare(quotation)}
-                    className="hover:bg-green-50 hover:border-green-200 hover:text-green-700 h-9"
+                    className="mobile-button hover:bg-green-50 hover:border-green-200 hover:text-green-700"
                   >
                     <MessageCircle className="mr-1 h-4 w-4" />
-                    WhatsApp
+                    <span className="hidden sm:inline">WhatsApp</span>
+                    <span className="sm:hidden">WA</span>
                   </Button>
 
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleCopyLink(quotation)}
-                    className="hover:bg-gray-50 hover:border-gray-200 hover:text-gray-700 h-9"
+                    className="mobile-button hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
                   >
                     <Share2 className="mr-1 h-4 w-4" />
-                    Link
+                    <span className="hidden sm:inline">Link</span>
+                    <span className="sm:hidden">Link</span>
                   </Button>
                 </div>
 
@@ -422,9 +438,9 @@ export default function QuotationList({ userRole }: QuotationListProps) {
                   <Button
                     size="sm"
                     onClick={() => handleSendQuotation(quotation)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 h-9"
+                    className="btn-success w-full mobile-button"
                   >
-                    <Send className="mr-1 h-4 w-4" />
+                    <Send className="mr-2 h-4 w-4" />
                     Send Quotation
                   </Button>
                 )}
@@ -435,29 +451,35 @@ export default function QuotationList({ userRole }: QuotationListProps) {
 
         {quotations.length === 0 && (
           <div className="col-span-full">
-            <Card className="p-8 lg:p-12 text-center bg-gradient-to-br from-gray-50 to-gray-100 border-dashed border-2 border-gray-300 mx-4 lg:mx-0">
-              <FileText className="mx-auto h-12 w-12 lg:h-16 lg:w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-2">No quotations found</h3>
-              <p className="text-gray-600 mb-4 lg:mb-6">Create your first quotation to get started.</p>
-              <Button
-                onClick={() => (window.location.href = "/quotations/create")}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                Create Your First Quotation
-              </Button>
+            <Card className="card-modern text-center py-12 border-2 border-dashed border-gray-300">
+              <CardContent className="mobile-card">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-secondary mb-3">No quotations found</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  Create your first quotation to get started with managing your business quotes and proposals.
+                </p>
+                <Button
+                  onClick={() => (window.location.href = "/quotations/create")}
+                  className="btn-primary mobile-button"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Create Your First Quotation
+                </Button>
+              </CardContent>
             </Card>
           </div>
         )}
       </div>
 
-      {/* Quotation View Modal */}
+      {/* Modals */}
       <QuotationViewModal
         quotation={selectedQuotation}
         isOpen={viewModalOpen}
         onClose={() => setViewModalOpen(false)}
       />
 
-      {/* Quotation Preview Modal */}
       <QuotationPreview
         quotation={selectedQuotation}
         isOpen={previewModalOpen}

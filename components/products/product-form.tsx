@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Upload, Loader2, ArrowLeft, Package } from "lucide-react"
+import { Upload, Loader2, ArrowLeft, Package, Tag, Hash, DollarSign, ImageIcon } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { logActivity } from "@/lib/logger"
 
@@ -110,146 +110,219 @@ export default function ProductForm() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 lg:px-0">
-      <Card className="shadow-sm">
+    <div className="mobile-container space-y-6">
+      <Card className="card-modern">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center text-lg lg:text-xl">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              className="mr-2 hover:bg-gray-100 h-9 w-9"
-            >
+          <CardTitle className="flex items-center gap-3 text-secondary">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="mobile-button hover:bg-muted">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Package className="mr-2 h-5 w-5" />
-            Add New Product
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <span className="text-xl font-bold">Add New Product</span>
+              <p className="text-sm text-muted-foreground font-normal">Create a new product in your inventory</p>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="mobile-spacing">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="group" className="text-sm font-medium">
-                  Group
-                </Label>
-                <Select value={formData.group} onValueChange={(value) => setFormData({ ...formData, group: value })}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select Group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hosiery">Hosiery</SelectItem>
-                    <SelectItem value="garments">Garments</SelectItem>
-                    <SelectItem value="accessories">Accessories</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Product Categories */}
+            <div className="bg-muted/30 rounded-xl p-6 border">
+              <h3 className="text-lg font-semibold text-secondary mb-4 flex items-center gap-3">
+                <div className="w-8 h-8 bg-secondary/10 rounded-lg flex items-center justify-center">
+                  <Tag className="h-4 w-4 text-secondary" />
+                </div>
+                Product Categories
+              </h3>
 
-              <div className="space-y-2">
-                <Label htmlFor="subGroup" className="text-sm font-medium">
-                  Sub-Group
-                </Label>
-                <Input
-                  id="subGroup"
-                  value={formData.subGroup}
-                  onChange={(e) => setFormData({ ...formData, subGroup: e.target.value })}
-                  required
-                  className="h-11"
-                  placeholder="Enter sub-group"
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="group" className="text-sm font-medium text-secondary">
+                    Product Group
+                  </Label>
+                  <Select value={formData.group} onValueChange={(value) => setFormData({ ...formData, group: value })}>
+                    <SelectTrigger className="input-modern mobile-input">
+                      <SelectValue placeholder="Select product group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hosiery">Hosiery</SelectItem>
+                      <SelectItem value="garments">Garments</SelectItem>
+                      <SelectItem value="accessories">Accessories</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="subGroup" className="text-sm font-medium text-secondary">
+                    Sub-Group
+                  </Label>
+                  <Input
+                    id="subGroup"
+                    value={formData.subGroup}
+                    onChange={(e) => setFormData({ ...formData, subGroup: e.target.value })}
+                    required
+                    className="input-modern mobile-input"
+                    placeholder="Enter sub-group (e.g., shirts, pants)"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="productId" className="text-sm font-medium">
-                  Product ID
-                </Label>
-                <Input
-                  id="productId"
-                  value={formData.productId}
-                  onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-                  required
-                  className="h-11"
-                  placeholder="Enter product ID"
-                />
+            {/* Product Details */}
+            <div className="bg-primary/5 rounded-xl p-6 border border-primary/20">
+              <h3 className="text-lg font-semibold text-secondary mb-4 flex items-center gap-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Hash className="h-4 w-4 text-primary" />
+                </div>
+                Product Details
+              </h3>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="productId" className="text-sm font-medium text-secondary">
+                      Product ID
+                    </Label>
+                    <Input
+                      id="productId"
+                      value={formData.productId}
+                      onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                      required
+                      className="input-modern mobile-input font-mono"
+                      placeholder="Enter unique product ID"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity" className="text-sm font-medium text-secondary">
+                      Initial Stock Quantity
+                    </Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="0"
+                      value={formData.quantity}
+                      onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                      required
+                      className="input-modern mobile-input"
+                      placeholder="Enter quantity"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-secondary">
+                    Product Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="input-modern mobile-input"
+                    placeholder="Enter descriptive product name"
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* Pricing */}
+            <div className="bg-success/5 rounded-xl p-6 border border-success/20">
+              <h3 className="text-lg font-semibold text-secondary mb-4 flex items-center gap-3">
+                <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-success" />
+                </div>
+                Pricing Information
+              </h3>
 
               <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-sm font-medium">
-                  Quantity
+                <Label htmlFor="price" className="text-sm font-medium text-secondary">
+                  Unit Price (PKR)
                 </Label>
                 <Input
-                  id="quantity"
+                  id="price"
                   type="number"
+                  step="0.01"
                   min="0"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   required
-                  className="h-11"
-                  placeholder="Enter quantity"
+                  className="input-modern mobile-input"
+                  placeholder="Enter price per unit"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Set the selling price for this product in Pakistani Rupees
+                </p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Product Name
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                className="h-11"
-                placeholder="Enter product name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price" className="text-sm font-medium">
-                Price (PKR)
-              </Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                required
-                className="h-11"
-                placeholder="Enter price"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="image" className="text-sm font-medium">
+            {/* Product Image */}
+            <div className="bg-muted/30 rounded-xl p-6 border">
+              <h3 className="text-lg font-semibold text-secondary mb-4 flex items-center gap-3">
+                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <ImageIcon className="h-4 w-4 text-gray-600" />
+                </div>
                 Product Image
-              </Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImage(e.target.files?.[0] || null)}
-                  className="flex-1 h-11"
-                />
-                <Upload className="h-5 w-5 text-gray-400" />
+              </h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="image" className="text-sm font-medium text-secondary">
+                  Upload Product Image (Optional)
+                </Label>
+                <div className="flex items-center space-x-3">
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImage(e.target.files?.[0] || null)}
+                    className="flex-1 input-modern mobile-input"
+                  />
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Upload className="h-4 w-4 text-gray-600" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Upload a clear image of the product. Supported formats: JPG, PNG, WebP
+                </p>
               </div>
-              <p className="text-xs text-gray-500">Upload an image for the product (optional)</p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 h-11 flex-1 sm:flex-none"
-                disabled={loading}
-              >
+            {/* Summary Card */}
+            {formData.name && formData.price && formData.quantity && (
+              <div className="gradient-primary rounded-xl p-6 text-white">
+                <h3 className="text-lg font-semibold mb-4">Product Summary</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-primary-foreground/80">Product Name</p>
+                    <p className="font-semibold">{formData.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-primary-foreground/80">Initial Stock</p>
+                    <p className="font-semibold">{formData.quantity} units</p>
+                  </div>
+                  <div>
+                    <p className="text-primary-foreground/80">Total Value</p>
+                    <p className="font-semibold">
+                      PKR{" "}
+                      {(
+                        Number.parseFloat(formData.price || "0") * Number.parseInt(formData.quantity || "0")
+                      ).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Button type="submit" className="btn-primary mobile-button flex-1 sm:flex-none" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding...
+                    Adding Product...
                   </>
                 ) : (
                   <>
@@ -263,7 +336,7 @@ export default function ProductForm() {
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                className="h-11 flex-1 sm:flex-none"
+                className="mobile-button flex-1 sm:flex-none"
               >
                 Cancel
               </Button>

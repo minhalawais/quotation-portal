@@ -1,7 +1,5 @@
 "use client"
-
 import type React from "react"
-
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -9,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Minus, FileText, Search } from "lucide-react"
+import { Plus, Minus, FileText, Search, User, Phone, MapPin, Package } from "lucide-react"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
@@ -58,20 +56,20 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
       }
     } catch (error) {
       console.error("Failed to fetch products:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load products",
+        variant: "destructive",
+      })
     }
   }
 
   const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits except the + sign
     const cleaned = value.replace(/[^\d+]/g, "")
-
-    // Ensure it starts with +92
     if (!cleaned.startsWith("+92")) {
       return "+92 "
     }
-
-    // Format: +92 XXX XXXXXXX
-    const digits = cleaned.slice(3) // Remove +92
+    const digits = cleaned.slice(3)
     if (digits.length <= 3) {
       return `+92 ${digits}`
     } else if (digits.length <= 10) {
@@ -115,7 +113,6 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate phone number
     const phoneRegex = /^\+92 \d{3} \d{7}$/
     if (!phoneRegex.test(customerData.phone)) {
       toast({
@@ -172,16 +169,17 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
     const [searchTerm, setSearchTerm] = useState("")
 
     const filteredProducts = useMemo(() => {
-      if (!searchTerm) return products.slice(0, 10) // Show first 10 products by default
+      if (!searchTerm) return products.slice(0, 10)
 
+      const term = searchTerm.toLowerCase()
       return products
         .filter(
           (product) =>
-            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.productId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.group.toLowerCase().includes(searchTerm.toLowerCase()),
+            product.name.toLowerCase().includes(term) ||
+            product.productId?.toLowerCase().includes(term) ||
+            product.group?.toLowerCase().includes(term),
         )
-        .slice(0, 20) // Limit to 20 results for performance
+        .slice(0, 20)
     }, [searchTerm, products])
 
     const selectedProduct = products.find((p) => p._id === value)
@@ -193,11 +191,11 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
             variant="outline"
             role="combobox"
             aria-expanded={searchOpen === index}
-            className="w-full justify-between text-left font-normal"
+            className="w-full justify-between text-left font-normal input-modern mobile-input"
           >
             {selectedProduct ? (
               <span className="truncate">
-                {selectedProduct.name} (₹{selectedProduct.price})
+                {selectedProduct.name} (PKR{selectedProduct.price})
               </span>
             ) : (
               <span className="text-muted-foreground">Select product...</span>
@@ -214,20 +212,19 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
                 {filteredProducts.map((product) => (
                   <CommandItem
                     key={product._id}
-                    value={product._id}
+                    value={product.name}
                     onSelect={() => {
                       onSelect(product._id)
-                      setSearchOpen(null)
+                      setSearchOpen(false)
                       setSearchTerm("")
                     }}
-                    className="cursor-pointer"
                   >
                     <div className="flex flex-col w-full">
                       <div className="flex justify-between items-center">
                         <span className="font-medium truncate">{product.name}</span>
-                        <span className="text-sm text-blue-600 font-semibold">₹{product.price}</span>
+                        <span className="text-sm text-primary font-semibold">PKR{product.price}</span>
                       </div>
-                      <div className="flex justify-between items-center text-xs text-gray-500">
+                      <div className="flex justify-between items-center text-xs text-muted-foreground">
                         <span>ID: {product.productId}</span>
                         <span>Stock: {product.quantity}</span>
                       </div>
@@ -243,15 +240,22 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6 px-4 lg:px-0">
-      <Card className="shadow-sm">
+    <div className="space-y-6">
+      {/* Customer Information Card */}
+      <Card className="card-modern">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg lg:text-xl">Customer Information</CardTitle>
+          <CardTitle className="flex items-center gap-3 text-secondary">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <User className="h-5 w-5 text-primary" />
+            </div>
+            Customer Information
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
+        <CardContent className="mobile-spacing">
+          <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="customerName" className="text-sm font-medium">
+              <Label htmlFor="customerName" className="text-sm font-medium text-secondary flex items-center gap-2">
+                <User className="h-4 w-4" />
                 Customer Name
               </Label>
               <Input
@@ -259,13 +263,14 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
                 value={customerData.name}
                 onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })}
                 required
-                className="h-11"
+                className="input-modern mobile-input"
                 placeholder="Enter customer name"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customerPhone" className="text-sm font-medium">
+              <Label htmlFor="customerPhone" className="text-sm font-medium text-secondary flex items-center gap-2">
+                <Phone className="h-4 w-4" />
                 Phone Number
               </Label>
               <Input
@@ -273,15 +278,16 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
                 value={customerData.phone}
                 onChange={handlePhoneChange}
                 required
-                className="h-11"
+                className="input-modern mobile-input"
                 placeholder="+92 XXX XXXXXXX"
                 maxLength={15}
               />
-              <p className="text-xs text-gray-500">Format: +92 XXX XXXXXXX</p>
+              <p className="text-xs text-muted-foreground">Format: +92 XXX XXXXXXX</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customerAddress" className="text-sm font-medium">
+              <Label htmlFor="customerAddress" className="text-sm font-medium text-secondary flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
                 Address
               </Label>
               <Input
@@ -289,7 +295,7 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
                 value={customerData.address}
                 onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })}
                 required
-                className="h-11"
+                className="input-modern mobile-input"
                 placeholder="Enter customer address"
               />
             </div>
@@ -297,35 +303,41 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm">
+      {/* Products Card */}
+      <Card className="card-modern">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-lg lg:text-xl">Products</CardTitle>
-            <Button onClick={addItem} size="sm" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+            <CardTitle className="flex items-center gap-3 text-secondary">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Package className="h-5 w-5 text-primary" />
+              </div>
+              Products & Services
+            </CardTitle>
+            <Button onClick={addItem} className="btn-primary mobile-button w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Add Item
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="mobile-spacing">
           {items.map((item, index) => (
-            <div key={index} className="p-4 border rounded-lg bg-gray-50 space-y-4">
+            <div key={index} className="bg-muted/30 rounded-xl p-4 sm:p-6 space-y-4 border">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Item #{index + 1}</span>
+                <span className="text-sm font-semibold text-secondary">Item #{index + 1}</span>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => removeItem(index)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 mobile-button"
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium">Product</Label>
+                  <Label className="text-sm font-medium text-secondary">Product</Label>
                   <ProductSearchCombobox
                     index={index}
                     value={item.productId}
@@ -333,36 +345,36 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium">Quantity</Label>
+                    <Label className="text-sm font-medium text-secondary">Quantity</Label>
                     <Input
                       type="number"
                       min="1"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, "quantity", Number.parseInt(e.target.value))}
-                      className="h-10"
+                      className="input-modern mobile-input"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium">Price (₹)</Label>
+                    <Label className="text-sm font-medium text-secondary">Price (PKR)</Label>
                     <Input
                       type="number"
                       step="0.01"
                       value={item.price}
                       onChange={(e) => updateItem(index, "price", Number.parseFloat(e.target.value))}
-                      className="h-10"
+                      className="input-modern mobile-input"
                     />
                   </div>
                 </div>
 
                 {item.productId && item.quantity > 0 && item.price > 0 && (
-                  <div className="bg-blue-50 p-3 rounded-md">
+                  <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-blue-900">Item Total:</span>
-                      <span className="text-lg font-bold text-blue-600">
-                        ₹{(item.quantity * item.price).toFixed(2)}
+                      <span className="text-sm font-medium text-secondary">Item Total:</span>
+                      <span className="text-lg font-bold text-primary">
+                        PKR {(item.quantity * item.price).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -372,34 +384,41 @@ export default function QuotationForm({ userId }: QuotationFormProps) {
           ))}
 
           {items.length === 0 && (
-            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-              <FileText className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <p className="text-sm">No items added. Click "Add Item" to start building your quotation.</p>
+            <div className="text-center py-12 bg-muted/30 rounded-xl border-2 border-dashed border-gray-300">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-secondary mb-2">No items added</h3>
+              <p className="text-sm text-muted-foreground">Click "Add Item" to start building your quotation.</p>
             </div>
           )}
 
           {items.length > 0 && (
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
+            <div className="gradient-primary p-6 rounded-xl text-white">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-900">Grand Total:</span>
-                <span className="text-2xl font-bold text-blue-600">₹{calculateTotal().toFixed(2)}</span>
+                <span className="text-lg font-semibold">Grand Total:</span>
+                <span className="text-3xl font-bold">PKR {calculateTotal().toFixed(2)}</span>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <div className="flex flex-col sm:flex-row gap-3 pb-6">
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 pb-6">
         <Button
           onClick={handleSubmit}
-          className="bg-blue-600 hover:bg-blue-700 h-11 flex-1 sm:flex-none"
+          className="btn-primary mobile-button flex-1 sm:flex-none"
           disabled={loading || items.length === 0}
         >
           <FileText className="mr-2 h-4 w-4" />
           {loading ? "Creating..." : "Create Quotation"}
         </Button>
 
-        <Button type="button" variant="outline" onClick={() => router.back()} className="h-11 flex-1 sm:flex-none">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          className="mobile-button flex-1 sm:flex-none"
+        >
           Cancel
         </Button>
       </div>
