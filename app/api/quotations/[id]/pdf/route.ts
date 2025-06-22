@@ -34,8 +34,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }),
     )
 
-    // Use the same enhanced PDF generation function
-    const pdfBuffer = await generateEnhancedPDF(quotation, itemsWithDetails)
+    // Use the same reliable PDF generation function
+    const pdfBuffer = await generateReliablePDF(quotation, itemsWithDetails)
 
     return new NextResponse(pdfBuffer, {
       headers: {
@@ -50,9 +50,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// Import the same enhanced function
-async function generateEnhancedPDF(quotation: any, items: any[]): Promise<Buffer> {
+// Import the same function from the public route
+async function generateReliablePDF(quotation: any, items: any[]): Promise<Buffer> {
   try {
+    // Use jsPDF for reliable PDF generation
     const { jsPDF } = await import("jspdf")
 
     // Create new PDF document
@@ -62,213 +63,108 @@ async function generateEnhancedPDF(quotation: any, items: any[]): Promise<Buffer
       format: "a4",
     })
 
-    // Define colors (RGB values for consistency)
-    const colors = {
-      primary: [37, 99, 235], // Blue
-      primaryLight: [59, 130, 246], // Light Blue
-      secondary: [107, 114, 128], // Gray
-      text: [31, 41, 55], // Dark Gray
-      lightGray: [249, 250, 251], // Very Light Gray
-      white: [255, 255, 255], // White
-      success: [34, 197, 94], // Green
-      warning: [251, 191, 36], // Yellow
-    }
+    // Set font
+    doc.setFont("helvetica")
 
-    // Helper function to create gradient effect with multiple rectangles
-    const createGradientEffect = (
-      x: number,
-      y: number,
-      width: number,
-      height: number,
-      startColor: number[],
-      endColor: number[],
-    ) => {
-      const steps = 20
-      const stepHeight = height / steps
+    // Colors
+    const primaryColor = [37, 99, 235] // Blue
+    const secondaryColor = [107, 114, 128] // Gray
+    const textColor = [31, 41, 55] // Dark gray
 
-      for (let i = 0; i < steps; i++) {
-        const ratio = i / (steps - 1)
-        const r = Math.round(startColor[0] + (endColor[0] - startColor[0]) * ratio)
-        const g = Math.round(startColor[1] + (endColor[1] - startColor[1]) * ratio)
-        const b = Math.round(startColor[2] + (endColor[2] - startColor[2]) * ratio)
+    // Header
+    doc.setFontSize(24)
+    doc.setTextColor(...primaryColor)
+    doc.text("Inventory Portal", 105, 25, { align: "center" })
 
-        doc.setFillColor(r, g, b)
-        doc.rect(x, y + i * stepHeight, width, stepHeight + 0.1, "F")
-      }
-    }
-
-    // Header with gradient background
-    createGradientEffect(0, 0, 210, 80, colors.primary, colors.primaryLight)
-
-    // Company name and details
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(28)
-    doc.setTextColor(...colors.white)
-    doc.text("INVENTORY PORTAL", 105, 25, { align: "center" })
-
-    doc.setFont("helvetica", "normal")
     doc.setFontSize(12)
-    doc.setTextColor(...colors.white)
+    doc.setTextColor(...secondaryColor)
     doc.text("Professional Inventory & Quotation Management", 105, 35, { align: "center" })
 
-    // Quotation title with background
-    doc.setFillColor(...colors.white)
-    doc.roundedRect(70, 45, 70, 15, 3, 3, "F")
+    doc.setFontSize(20)
+    doc.setTextColor(...primaryColor)
+    doc.text("QUOTATION", 105, 50, { align: "center" })
 
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(18)
-    doc.setTextColor(...colors.primary)
-    doc.text("QUOTATION", 105, 55, { align: "center" })
+    doc.setFontSize(12)
+    doc.setTextColor(...textColor)
+    doc.text(`#${quotation._id.toString().slice(-8).toUpperCase()}`, 105, 60, { align: "center" })
+    doc.text(`Status: ${quotation.status.toUpperCase()}`, 105, 68, { align: "center" })
 
-    // Quotation number and status
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(11)
-    doc.setTextColor(...colors.white)
-    doc.text(`#${quotation._id.toString().slice(-8).toUpperCase()}`, 105, 68, { align: "center" })
+    // Line separator
+    doc.setDrawColor(...primaryColor)
+    doc.setLineWidth(1)
+    doc.line(20, 75, 190, 75)
 
-    // Status badge
-    const statusColor =
-      quotation.status === "sent" ? colors.success : quotation.status === "pending" ? colors.warning : colors.secondary
-    doc.setFillColor(...statusColor)
-    doc.roundedRect(85, 72, 40, 6, 2, 2, "F")
-    doc.setTextColor(...colors.white)
-    doc.setFontSize(9)
-    doc.text(`STATUS: ${quotation.status.toUpperCase()}`, 105, 76, { align: "center" })
+    let yPos = 90
 
-    let yPos = 95
-
-    // Customer Information Section with background
-    doc.setFillColor(...colors.lightGray)
-    doc.roundedRect(15, yPos - 5, 85, 35, 3, 3, "F")
-
-    // Border for customer section
-    doc.setDrawColor(...colors.primary)
-    doc.setLineWidth(0.5)
-    doc.roundedRect(15, yPos - 5, 85, 35, 3, 3, "S")
-
-    doc.setFont("helvetica", "bold")
+    // Customer Information
     doc.setFontSize(14)
-    doc.setTextColor(...colors.primary)
-    doc.text("BILL TO", 20, yPos + 2)
+    doc.setTextColor(...primaryColor)
+    doc.text("Bill To:", 20, yPos)
 
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(10)
-    doc.setTextColor(...colors.text)
+    doc.setFontSize(11)
+    doc.setTextColor(...textColor)
     yPos += 8
     doc.text(`Name: ${quotation.customerName}`, 20, yPos)
-    yPos += 5
+    yPos += 6
     doc.text(`Phone: ${quotation.customerPhone}`, 20, yPos)
-    yPos += 5
-    doc.text(`Address: ${quotation.customerAddress.substring(0, 35)}`, 20, yPos)
-    if (quotation.customerAddress.length > 35) {
-      yPos += 5
-      doc.text(`${quotation.customerAddress.substring(35, 70)}`, 20, yPos)
-    }
+    yPos += 6
+    doc.text(`Address: ${quotation.customerAddress}`, 20, yPos)
 
-    // Quotation Details Section with background
-    doc.setFillColor(...colors.lightGray)
-    doc.roundedRect(110, 90, 85, 35, 3, 3, "F")
-
-    // Border for quotation details section
-    doc.setDrawColor(...colors.primary)
-    doc.setLineWidth(0.5)
-    doc.roundedRect(110, 90, 85, 35, 3, 3, "S")
-
-    doc.setFont("helvetica", "bold")
+    // Quotation Details (right side)
     doc.setFontSize(14)
-    doc.setTextColor(...colors.primary)
-    doc.text("QUOTATION DETAILS", 115, 97)
+    doc.setTextColor(...primaryColor)
+    doc.text("Quotation Details:", 120, 90)
 
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(10)
-    doc.setTextColor(...colors.text)
-    doc.text(`Date: ${new Date(quotation.createdAt).toLocaleDateString()}`, 115, 105)
-    doc.text(`Valid Until: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}`, 115, 110)
-    doc.text(`Items: ${items.length}`, 115, 115)
-    doc.text(`Total: PKR ${quotation.totalAmount.toLocaleString()}`, 115, 120)
+    doc.setFontSize(11)
+    doc.setTextColor(...textColor)
+    doc.text(`Date: ${new Date(quotation.createdAt).toLocaleDateString()}`, 120, 98)
+    doc.text(`Valid Until: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}`, 120, 104)
+    doc.text(`Items: ${items.length}`, 120, 110)
 
-    yPos = 140
+    yPos = Math.max(yPos, 110) + 15
 
-    // Items Section Header with gradient
-    createGradientEffect(15, yPos - 5, 180, 12, colors.primary, colors.primaryLight)
-
-    doc.setFont("helvetica", "bold")
+    // Items Table Header
     doc.setFontSize(14)
-    doc.setTextColor(...colors.white)
-    doc.text("ITEMS & SERVICES", 105, yPos + 2, { align: "center" })
-
-    yPos += 15
-
-    // Table header with solid background
-    doc.setFillColor(...colors.primary)
-    doc.rect(15, yPos - 3, 180, 8, "F")
-
-    // Table header borders
-    doc.setDrawColor(...colors.white)
-    doc.setLineWidth(0.3)
-    doc.line(15, yPos - 3, 195, yPos - 3) // Top
-    doc.line(15, yPos + 5, 195, yPos + 5) // Bottom
-    doc.line(15, yPos - 3, 15, yPos + 5) // Left
-    doc.line(195, yPos - 3, 195, yPos + 5) // Right
-
-    // Column separators
-    doc.line(50, yPos - 3, 50, yPos + 5) // After Product ID
-    doc.line(120, yPos - 3, 120, yPos + 5) // After Description
-    doc.line(140, yPos - 3, 140, yPos + 5) // After Qty
-    doc.line(170, yPos - 3, 170, yPos + 5) // After Unit Price
-
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(9)
-    doc.setTextColor(...colors.white)
-    doc.text("PRODUCT ID", 17, yPos + 1)
-    doc.text("DESCRIPTION", 52, yPos + 1)
-    doc.text("QTY", 125, yPos + 1)
-    doc.text("UNIT PRICE", 142, yPos + 1)
-    doc.text("TOTAL", 172, yPos + 1)
-
+    doc.setTextColor(...primaryColor)
+    doc.text("Items & Services", 105, yPos, { align: "center" })
     yPos += 10
 
-    // Table rows with alternating backgrounds and borders
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(8)
-    doc.setTextColor(...colors.text)
+    // Table header background
+    doc.setFillColor(...primaryColor)
+    doc.rect(20, yPos - 5, 170, 8, "F")
+
+    doc.setFontSize(10)
+    doc.setTextColor(255, 255, 255) // White text
+    doc.text("Product ID", 22, yPos)
+    doc.text("Description", 55, yPos)
+    doc.text("Qty", 120, yPos)
+    doc.text("Unit Price", 135, yPos)
+    doc.text("Total", 165, yPos)
+
+    yPos += 12
+
+    // Table rows
+    doc.setTextColor(...textColor)
+    let totalAmount = 0
 
     items.forEach((item, index) => {
       const rowTotal = item.quantity * item.price
+      totalAmount += rowTotal
 
-      // Alternating row background
+      // Alternate row background
       if (index % 2 === 0) {
-        doc.setFillColor(...colors.lightGray)
-        doc.rect(15, yPos - 2, 180, 6, "F")
-      } else {
-        doc.setFillColor(...colors.white)
-        doc.rect(15, yPos - 2, 180, 6, "F")
+        doc.setFillColor(249, 250, 251) // Light gray
+        doc.rect(20, yPos - 4, 170, 7, "F")
       }
 
-      // Row borders
-      doc.setDrawColor(...colors.secondary)
-      doc.setLineWidth(0.1)
-      doc.rect(15, yPos - 2, 180, 6, "S")
+      doc.setFontSize(9)
+      doc.text(item.productId.toString(), 22, yPos)
+      doc.text(item.productName.substring(0, 25), 55, yPos) // Truncate long names
+      doc.text(item.quantity.toString(), 122, yPos)
+      doc.text(`PKR ${item.price.toLocaleString()}`, 137, yPos)
+      doc.text(`PKR ${rowTotal.toLocaleString()}`, 167, yPos)
 
-      // Column separators
-      doc.line(50, yPos - 2, 50, yPos + 4)
-      doc.line(120, yPos - 2, 120, yPos + 4)
-      doc.line(140, yPos - 2, 140, yPos + 4)
-      doc.line(170, yPos - 2, 170, yPos + 4)
-
-      // Cell content
-      doc.setTextColor(...colors.text)
-      doc.text(item.productId.toString().substring(0, 12), 17, yPos + 1)
-      doc.text(item.productName.substring(0, 25), 52, yPos + 1)
-      doc.text(item.quantity.toString(), 127, yPos + 1)
-      doc.text(`PKR ${item.price.toLocaleString()}`, 142, yPos + 1)
-
-      doc.setFont("helvetica", "bold")
-      doc.setTextColor(...colors.primary)
-      doc.text(`PKR ${rowTotal.toLocaleString()}`, 172, yPos + 1)
-      doc.setFont("helvetica", "normal")
-
-      yPos += 6
+      yPos += 7
 
       // Check if we need a new page
       if (yPos > 250) {
@@ -279,78 +175,48 @@ async function generateEnhancedPDF(quotation: any, items: any[]): Promise<Buffer
 
     yPos += 10
 
-    // Total Section with enhanced styling
-    const totalSectionY = yPos
-
-    // Total section background
-    doc.setFillColor(...colors.lightGray)
-    doc.roundedRect(120, totalSectionY, 75, 25, 3, 3, "F")
-
-    // Total section border
-    doc.setDrawColor(...colors.primary)
+    // Total Section
+    doc.setDrawColor(...primaryColor)
     doc.setLineWidth(0.5)
-    doc.roundedRect(120, totalSectionY, 75, 25, 3, 3, "S")
+    doc.line(120, yPos, 190, yPos)
+    yPos += 8
 
-    yPos += 5
+    doc.setFontSize(11)
+    doc.setTextColor(...textColor)
+    doc.text("Subtotal:", 140, yPos)
+    doc.text(`PKR ${quotation.totalAmount.toLocaleString()}`, 170, yPos)
+    yPos += 6
 
-    // Subtotal
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(10)
-    doc.setTextColor(...colors.text)
-    doc.text("Subtotal:", 125, yPos)
-    doc.text(`PKR ${quotation.totalAmount.toLocaleString()}`, 175, yPos)
-    yPos += 5
+    doc.text("Tax (0%):", 140, yPos)
+    doc.text("PKR 0", 170, yPos)
+    yPos += 8
 
-    // Tax
-    doc.text("Tax (0%):", 125, yPos)
-    doc.text("PKR 0", 175, yPos)
-    yPos += 5
+    // Grand Total
+    doc.setDrawColor(...primaryColor)
+    doc.setLineWidth(1)
+    doc.line(120, yPos, 190, yPos)
+    yPos += 8
 
-    // Separator line
-    doc.setDrawColor(...colors.primary)
-    doc.setLineWidth(0.8)
-    doc.line(125, yPos, 190, yPos)
-    yPos += 5
-
-    // Grand Total with highlight
-    doc.setFillColor(...colors.primary)
-    doc.roundedRect(123, yPos - 2, 70, 8, 2, 2, "F")
-
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(12)
-    doc.setTextColor(...colors.white)
-    doc.text("GRAND TOTAL:", 125, yPos + 2)
-    doc.text(`PKR ${quotation.totalAmount.toLocaleString()}`, 175, yPos + 2)
+    doc.setFontSize(14)
+    doc.setTextColor(...primaryColor)
+    doc.text("Grand Total:", 140, yPos)
+    doc.text(`PKR ${quotation.totalAmount.toLocaleString()}`, 170, yPos)
 
     yPos += 20
 
-    // Terms and Conditions with background
+    // Terms and Conditions
     if (yPos > 220) {
       doc.addPage()
       yPos = 20
     }
 
-    doc.setFillColor(...colors.warning)
-    doc.roundedRect(15, yPos - 3, 180, 8, 2, 2, "F")
-
-    doc.setFont("helvetica", "bold")
     doc.setFontSize(12)
-    doc.setTextColor(...colors.white)
-    doc.text("TERMS & CONDITIONS", 105, yPos + 1, { align: "center" })
-    yPos += 12
+    doc.setTextColor(...primaryColor)
+    doc.text("Terms & Conditions:", 20, yPos)
+    yPos += 8
 
-    // Terms background
-    doc.setFillColor(...colors.lightGray)
-    doc.roundedRect(15, yPos - 3, 180, 35, 3, 3, "F")
-
-    doc.setDrawColor(...colors.secondary)
-    doc.setLineWidth(0.3)
-    doc.roundedRect(15, yPos - 3, 180, 35, 3, 3, "S")
-
-    doc.setFont("helvetica", "normal")
     doc.setFontSize(9)
-    doc.setTextColor(...colors.text)
-
+    doc.setTextColor(...textColor)
     const terms = [
       "• This quotation is valid for 30 days from the date of issue.",
       "• Prices are subject to change without prior notice.",
@@ -367,31 +233,136 @@ async function generateEnhancedPDF(quotation: any, items: any[]): Promise<Buffer
 
     yPos += 10
 
-    // Footer with gradient background
-    createGradientEffect(0, yPos, 210, 25, colors.secondary, colors.primary)
-
+    // Footer
+    doc.setDrawColor(...secondaryColor)
+    doc.setLineWidth(0.5)
+    doc.line(20, yPos, 190, yPos)
     yPos += 8
 
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(14)
-    doc.setTextColor(...colors.white)
-    doc.text("INVENTORY PORTAL", 105, yPos, { align: "center" })
+    doc.setFontSize(12)
+    doc.setTextColor(...primaryColor)
+    doc.text("Inventory Portal", 105, yPos, { align: "center" })
     yPos += 6
 
-    doc.setFont("helvetica", "normal")
     doc.setFontSize(9)
-    doc.setTextColor(...colors.white)
-    doc.text("📧 info@inventoryportal.com  |  📱 +92-300-1234567  |  🌐 www.inventoryportal.com", 105, yPos, {
-      align: "center",
-    })
-    yPos += 5
+    doc.setTextColor(...secondaryColor)
+    doc.text("Email: info@inventoryportal.com | Phone: +92-300-1234567", 105, yPos, { align: "center" })
+    yPos += 4
+    doc.text("Website: www.inventoryportal.com", 105, yPos, { align: "center" })
+    yPos += 6
     doc.text("Thank you for your business!", 105, yPos, { align: "center" })
 
     // Convert to buffer
     const pdfArrayBuffer = doc.output("arraybuffer")
     return Buffer.from(pdfArrayBuffer)
   } catch (error) {
-    console.error("Enhanced PDF generation failed:", error)
-    throw new Error("PDF generation failed")
+    console.error("jsPDF generation failed:", error)
+
+    // Ultimate fallback - create a simple text-based PDF
+    return createSimpleTextPDF(quotation, items)
   }
+}
+
+function createSimpleTextPDF(quotation: any, items: any[]): Buffer {
+  // Create a proper PDF with basic structure
+  const content = `
+INVENTORY PORTAL
+Professional Inventory & Quotation Management
+
+QUOTATION #${quotation._id.toString().slice(-8).toUpperCase()}
+Status: ${quotation.status.toUpperCase()}
+
+BILL TO:
+Name: ${quotation.customerName}
+Phone: ${quotation.customerPhone}
+Address: ${quotation.customerAddress}
+
+QUOTATION DETAILS:
+Date: ${new Date(quotation.createdAt).toLocaleDateString()}
+Valid Until: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+
+ITEMS & SERVICES:
+${items
+  .map(
+    (item, index) =>
+      `${index + 1}. ${item.productId} - ${item.productName}
+     Quantity: ${item.quantity} | Unit Price: PKR ${item.price.toLocaleString()} | Total: PKR ${(item.quantity * item.price).toLocaleString()}`,
+  )
+  .join("\n")}
+
+TOTAL SUMMARY:
+Subtotal: PKR ${quotation.totalAmount.toLocaleString()}
+Tax (0%): PKR 0
+Grand Total: PKR ${quotation.totalAmount.toLocaleString()}
+
+TERMS & CONDITIONS:
+• This quotation is valid for 30 days from the date of issue.
+• Prices are subject to change without prior notice.
+• Payment terms: 50% advance, 50% on delivery.
+• Delivery time: 7-14 business days after order confirmation.
+• All prices are in Pakistani Rupees (PKR).
+• Returns are accepted within 7 days of delivery in original condition.
+
+CONTACT:
+Inventory Portal
+Email: info@inventoryportal.com | Phone: +92-300-1234567
+Website: www.inventoryportal.com
+Thank you for your business!
+`
+
+  // Create a proper PDF structure
+  const pdfHeader = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+
+5 0 obj
+<< /Length ${content.length + 100} >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+`
+
+  const pdfContent = content
+    .split("\n")
+    .map((line, index) => {
+      const yPos = 750 - index * 15
+      return `(${line.replace(/[()\\]/g, "")}) Tj 0 -15 Td`
+    })
+    .join("\n")
+
+  const pdfFooter = `
+ET
+endstream
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000274 00000 n 
+0000000351 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+${600 + content.length}
+%%EOF`
+
+  const fullPdf = pdfHeader + pdfContent + pdfFooter
+  return Buffer.from(fullPdf, "utf-8")
 }
