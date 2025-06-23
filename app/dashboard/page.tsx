@@ -19,7 +19,7 @@ export default async function Dashboard() {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-4 lg:p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl lg:text-2xl font-bold mb-1">Welcome back, {session.user.name}!</h1>
+            <h1 className="text-xl lg:text-2xl font-bold mb-1 text-white">Welcome back, {session.user.name}!</h1>
             <p className="text-blue-100 text-sm lg:text-base">Here's what's happening with your business today.</p>
           </div>
           <div className="hidden sm:block">
