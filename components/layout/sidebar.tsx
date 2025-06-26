@@ -93,14 +93,20 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           {/* Header - Mobile Optimized */}
-          <div className="flex items-center justify-between h-20 px-6 gradient-bg">
+          <div className="flex items-center justify-between h-20 px-6 bg-gradient-to-r from-blue-600 to-purple-600">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                <ShoppingCart className="h-7 w-7 text-white" />
+              {/* Updated Logo */}
+              <div className="relative w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+                <ShoppingCart className="h-7 w-7 text-blue-600" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <Package className="h-2.5 w-2.5 text-white" />
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Inventory</h1>
-                <p className="text-blue-100 text-sm font-medium">Portal</p>
+              
+              {/* Updated Text */}
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-white leading-tight">Inventory</h1>
+                <p className="text-blue-100 text-sm font-medium leading-tight">Portal</p>
               </div>
             </div>
 

@@ -94,7 +94,7 @@ export default function DashboardStats() {
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <div className="text-2xl font-bold">{stat.value}</div>
           </CardContent>
         </Card>
