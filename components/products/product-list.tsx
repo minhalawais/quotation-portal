@@ -24,6 +24,11 @@ interface Product {
   imagePath?: string
 }
 
+interface SubGroup {
+  group: string
+  name: string
+}
+
 interface ProductListProps {
   userRole: string
 }
@@ -36,19 +41,33 @@ export default function ProductList({ userRole }: ProductListProps) {
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [filters, setFilters] = useState({
     searchTerm: "",
-    selectedGroup: "",
-    selectedSubGroup: "",
+    selectedGroup: "all",
+    selectedSubGroup: "all",
   })
+  const [groups, setGroups] = useState<string[]>([])
+  const [subGroups, setSubGroups] = useState<SubGroup[]>([])
   const { toast } = useToast()
   const { data: session } = useSession()
   const router = useRouter()
 
   const fetchProducts = async () => {
     try {
+      setLoading(true)
       const response = await fetch("/api/products")
       if (response.ok) {
         const data = await response.json()
         setProducts(data)
+        
+        // Extract unique groups
+        const uniqueGroups = [...new Set(data.map((product: Product) => product.group))]
+        setGroups(uniqueGroups.sort())
+        
+        // Extract sub-groups with their groups
+        const subGroupsData = data.map((product: Product) => ({
+          group: product.group,
+          name: product.subGroup
+        }))
+        setSubGroups(subGroupsData)
       }
     } catch (error) {
       toast({
@@ -64,21 +83,24 @@ export default function ProductList({ userRole }: ProductListProps) {
   const applyFilters = useCallback(() => {
     let results = [...products]
 
+    // Apply group filter if selected and not "all"
+    if (filters.selectedGroup && filters.selectedGroup !== "all") {
+      results = results.filter((product) => product.group === filters.selectedGroup)
+    }
+
+    // Apply sub-group filter if selected and not "all"
+    if (filters.selectedSubGroup && filters.selectedSubGroup !== "all") {
+      results = results.filter((product) => product.subGroup === filters.selectedSubGroup)
+    }
+
+    // Apply search term to the filtered results
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase()
       results = results.filter(
         (product) =>
           product.name.toLowerCase().includes(term) ||
-          (product.productId && product.productId.toLowerCase().includes(term)),
+          (product.productId && product.productId.toLowerCase().includes(term))
       )
-    }
-
-    if (filters.selectedGroup) {
-      results = results.filter((product) => product.group === filters.selectedGroup)
-    }
-
-    if (filters.selectedSubGroup) {
-      results = results.filter((product) => product.subGroup === filters.selectedSubGroup)
     }
 
     setFilteredProducts(results)
@@ -136,6 +158,7 @@ export default function ProductList({ userRole }: ProductListProps) {
       })
 
       if (response.ok) {
+        // Update both products and filteredProducts state
         setProducts(products.filter((p) => p._id !== product._id))
         setFilteredProducts(filteredProducts.filter((p) => p._id !== product._id))
 
@@ -204,7 +227,12 @@ export default function ProductList({ userRole }: ProductListProps) {
 
   return (
     <div className="space-y-6">
-      <ProductFilters onFilterChange={handleFilterChange} />
+      <ProductFilters 
+        onFilterChange={handleFilterChange} 
+        groups={groups} 
+        subGroups={subGroups} 
+        currentFilters={filters}
+      />
 
       <div className="mobile-grid">
         {filteredProducts.map((product) => (
