@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Upload, Loader2, ArrowLeft, Package, Tag, Hash, DollarSign, ImageIcon } from "lucide-react"
+import { Upload, Loader2, ArrowLeft, Package, Tag, Hash, DollarSign, ImageIcon, Check, X } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { logActivity } from "@/lib/logger"
 
@@ -24,12 +24,70 @@ export default function ProductForm() {
   })
   const [image, setImage] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [lastProductId, setLastProductId] = useState("")
+  const [isProductIdUnique, setIsProductIdUnique] = useState<boolean | null>(null)
+  const [checkingId, setCheckingId] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
   const { data: session } = useSession()
 
+  useEffect(() => {
+    fetchLastProductId()
+  }, [])
+
+  useEffect(() => {
+    if (formData.productId) {
+      checkProductIdUniqueness()
+    } else {
+      setIsProductIdUnique(null)
+    }
+  }, [formData.productId])
+
+  const fetchLastProductId = async () => {
+    try {
+      const response = await fetch("/api/products/last-id")
+      if (response.ok) {
+        const data = await response.json()
+        setLastProductId(data.lastId || "No products yet")
+      }
+    } catch (error) {
+      console.error("Failed to fetch last product ID:", error)
+    }
+  }
+
+  const checkProductIdUniqueness = async () => {
+    if (!formData.productId) return
+    
+    setCheckingId(true)
+    try {
+      const response = await fetch(`/api/products/check-id?id=${formData.productId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsProductIdUnique(data.isUnique)
+      } else {
+        setIsProductIdUnique(null)
+      }
+    } catch (error) {
+      console.error("Failed to check product ID uniqueness:", error)
+      setIsProductIdUnique(null)
+    } finally {
+      setCheckingId(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Prevent submission if product ID is not unique
+    if (isProductIdUnique === false) {
+      toast({
+        title: "Error",
+        description: "Product ID must be unique",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -186,14 +244,33 @@ export default function ProductForm() {
                     <Label htmlFor="productId" className="text-sm font-medium text-secondary">
                       Product ID
                     </Label>
-                    <Input
-                      id="productId"
-                      value={formData.productId}
-                      onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-                      required
-                      className="input-modern mobile-input font-mono"
-                      placeholder="Enter unique product ID"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="productId"
+                        value={formData.productId}
+                        onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                        required
+                        className="input-modern mobile-input font-mono pr-10"
+                        placeholder="Enter unique product ID"
+                      />
+                      {checkingId ? (
+                        <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin" />
+                      ) : isProductIdUnique === true ? (
+                        <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                      ) : isProductIdUnique === false ? (
+                        <X className="absolute right-3 top-3 h-4 w-4 text-red-500" />
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {lastProductId && (
+                        <>
+                          Last product ID: <span className="font-mono font-semibold">{lastProductId}</span>
+                        </>
+                      )}
+                    </p>
+                    {isProductIdUnique === false && (
+                      <p className="text-xs text-red-500">This Product ID is already in use</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -318,7 +395,11 @@ export default function ProductForm() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button type="submit" className="btn-primary mobile-button flex-1 sm:flex-none" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="btn-primary mobile-button flex-1 sm:flex-none" 
+                disabled={loading || isProductIdUnique === false}
+              >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

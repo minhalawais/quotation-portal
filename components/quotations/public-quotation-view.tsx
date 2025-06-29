@@ -123,12 +123,12 @@ export default function PublicQuotationView({ quotation }: PublicQuotationViewPr
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Building2 className="h-8 w-8 text-white" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-2">Inventory Portal</h1>
+              <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-white">Inventory Portal</h1>
               <p className="text-primary-foreground/80">Professional Inventory & Quotation Management</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto">
-              <h2 className="text-2xl font-bold mb-4">QUOTATION</h2>
+              <h2 className="text-2xl font-bold mb-4 text-white">QUOTATION</h2>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <div className="bg-white px-4 py-2 rounded-full">
                   <span className="text-sm font-mono font-bold text-secondary">

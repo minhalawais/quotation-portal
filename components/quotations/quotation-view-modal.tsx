@@ -21,7 +21,7 @@ import {
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { formatPhoneForWhatsApp, generateWhatsAppMessage } from "@/lib/phone-utils"
-import QuotationPreview from "./quotation-preview"
+import { useRouter } from "next/navigation" // Add this import
 
 interface QuotationItem {
   productId: string
@@ -48,7 +48,7 @@ interface QuotationViewModalProps {
 }
 
 export default function QuotationViewModal({ quotation, isOpen, onClose }: QuotationViewModalProps) {
-  const [showPreview, setShowPreview] = useState(false)
+  const router = useRouter() // Initialize the router
   const { toast } = useToast()
 
   if (!quotation) return null
@@ -65,6 +65,11 @@ export default function QuotationViewModal({ quotation, isOpen, onClose }: Quota
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
+
+  const handlePreview = () => {
+    router.push(`/quotations/${quotation._id}`)
+  }
+
 
   const handleDownload = async () => {
     try {
@@ -93,64 +98,106 @@ export default function QuotationViewModal({ quotation, isOpen, onClose }: Quota
     }
   }
 
-  const handleSend = async () => {
-    try {
-      await fetch(`/api/quotations/${quotation._id}/send`, {
-        method: "POST",
-      })
-      toast({
-        title: "Success",
-        description: "Quotation sent successfully",
-      })
-    } catch (error) {
-      console.error("Error sending quotation:", error)
-      toast({
-        title: "Error",
-        description: "Failed to send quotation",
-        variant: "destructive",
-      })
-    }
-  }
+// Updated parts in quotation-view-modal.tsx
 
-  const handleWhatsAppShare = async () => {
-    try {
-      const formattedPhone = formatPhoneForWhatsApp(quotation.customerPhone)
-      const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
-      const message = generateWhatsAppMessage(quotation, quotationUrl)
-      const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
+const handleWhatsAppShare = async () => {
+  try {
+    const formattedPhone = formatPhoneForWhatsApp(quotation.customerPhone)
+    const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+    const message = generateWhatsAppMessage(quotation, quotationUrl)
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
 
+    // Update status to "sent" when sharing via WhatsApp
+    const response = await fetch(`/api/quotations/${quotation._id}/send`, {
+      method: "POST",
+    })
+
+    if (response.ok) {
       window.open(whatsappUrl, "_blank")
+      toast({
+        title: "Success",
+        description: "WhatsApp opened with quotation link and status updated to sent",
+      })
+    } else {
+      throw new Error("Failed to update quotation status")
+    }
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to open WhatsApp",
+      variant: "destructive",
+    })
+  }
+}
+
+const handleCopyLink = async () => {
+  try {
+    const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+    await navigator.clipboard.writeText(quotationUrl)
+
+    // Update status to "sent" when copying link
+    const response = await fetch(`/api/quotations/${quotation._id}/send`, {
+      method: "POST",
+    })
+
+    if (response.ok) {
+      toast({
+        title: "Success",
+        description: "Quotation link copied to clipboard and status updated to sent",
+      })
+    } else {
+      throw new Error("Failed to update quotation status")
+    }
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to copy link",
+      variant: "destructive",
+    })
+  }
+}
+
+const handleSend = async () => {
+  try {
+    const response = await fetch(`/api/quotations/${quotation._id}/send`, {
+      method: "POST",
+    })
+
+    if (response.ok) {
+      // Open share dialog after sending
+      if (navigator.share) {
+        const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+        await navigator.share({
+          title: `Quotation for ${quotation.customerName}`,
+          text: `Please review your quotation from Inventory Portal: ${quotationUrl}`,
+          url: quotationUrl,
+        });
+      } else {
+        // Fallback for browsers that don't support Web Share API
+        const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+        await navigator.clipboard.writeText(quotationUrl)
+        toast({
+          title: "Link Copied",
+          description: "Quotation link copied to clipboard. You can now share it anywhere.",
+        })
+      }
 
       toast({
         title: "Success",
-        description: "WhatsApp opened with quotation link",
+        description: "Quotation sent successfully and marked as sent",
       })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to open WhatsApp",
-        variant: "destructive",
-      })
+    } else {
+      throw new Error("Failed to send quotation")
     }
+  } catch (error) {
+    console.error("Error sending quotation:", error)
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to send quotation",
+      variant: "destructive",
+    })
   }
-
-  const handleCopyLink = async () => {
-    try {
-      const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
-      await navigator.clipboard.writeText(quotationUrl)
-
-      toast({
-        title: "Success",
-        description: "Quotation link copied to clipboard",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy link",
-        variant: "destructive",
-      })
-    }
-  }
+}
 
   return (
     <>
@@ -171,12 +218,12 @@ export default function QuotationViewModal({ quotation, isOpen, onClose }: Quota
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
-                <Button
-                  onClick={() => setShowPreview(true)}
-                  size="sm"
-                  variant="outline"
-                  className="mobile-button flex-shrink-0 hover:bg-primary/5 hover:border-primary/30 hover:text-primary"
-                >
+              <Button
+                onClick={handlePreview}
+                size="sm"
+                variant="outline"
+                className="mobile-button flex-shrink-0 hover:bg-primary/5 hover:border-primary/30 hover:text-primary"
+              >
                   <Eye className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Preview</span>
                   <span className="sm:hidden">Preview</span>
@@ -213,9 +260,6 @@ export default function QuotationViewModal({ quotation, isOpen, onClose }: Quota
                   </Button>
                 )}
 
-                <Button variant="ghost" size="icon" onClick={onClose} className="flex-shrink-0">
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </DialogTitle>
           </DialogHeader>
@@ -225,7 +269,7 @@ export default function QuotationViewModal({ quotation, isOpen, onClose }: Quota
             <div className="gradient-primary rounded-xl p-6 text-white">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold mb-3">
+                  <h2 className="text-xl sm:text-2xl font-bold mb-3 text-white">
                     Quotation #{quotation._id.slice(-8).toUpperCase()}
                   </h2>
                   <div className="flex flex-wrap items-center gap-3">
@@ -428,13 +472,6 @@ export default function QuotationViewModal({ quotation, isOpen, onClose }: Quota
         </DialogContent>
       </Dialog>
 
-      <QuotationPreview
-        quotation={quotation}
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        onDownload={handleDownload}
-        onSend={quotation.status === "pending" ? handleSend : undefined}
-      />
     </>
   )
 }

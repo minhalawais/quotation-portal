@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, FileText, Users, TrendingUp } from "lucide-react"
 
@@ -19,6 +20,7 @@ export default function DashboardStats() {
     totalRevenue: 0,
   })
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     fetchStats()
@@ -38,6 +40,10 @@ export default function DashboardStats() {
     }
   }
 
+  const handleCardClick = (route: string) => {
+    router.push(route)
+  }
+
   const statCards = [
     {
       title: "Total Products",
@@ -45,6 +51,7 @@ export default function DashboardStats() {
       icon: Package,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
+      route: "/products",
     },
     {
       title: "Total Quotations",
@@ -52,6 +59,7 @@ export default function DashboardStats() {
       icon: FileText,
       color: "text-green-600",
       bgColor: "bg-green-100",
+      route: "/quotations",
     },
     {
       title: "Active Users",
@@ -59,6 +67,7 @@ export default function DashboardStats() {
       icon: Users,
       color: "text-purple-600",
       bgColor: "bg-purple-100",
+      route: "/users",
     },
     {
       title: "Total Revenue",
@@ -66,6 +75,7 @@ export default function DashboardStats() {
       icon: TrendingUp,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
+      route: "/revenue",
     },
   ]
 
@@ -87,7 +97,11 @@ export default function DashboardStats() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statCards.map((stat, index) => (
-        <Card key={index}>
+        <Card
+          key={index}
+          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+          onClick={() => handleCardClick(stat.route)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
             <div className={`p-2 rounded-full ${stat.bgColor}`}>

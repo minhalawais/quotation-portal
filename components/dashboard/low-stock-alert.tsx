@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, Package } from "lucide-react"
@@ -15,6 +16,7 @@ interface LowStockProduct {
 export default function LowStockAlert() {
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     fetchLowStockProducts()
@@ -34,8 +36,15 @@ export default function LowStockAlert() {
     }
   }
 
+  const handleCardClick = () => {
+    router.push("/products")
+  }
+
   return (
-    <Card>
+    <Card
+      className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+      onClick={handleCardClick}
+    >
       <CardHeader>
         <CardTitle className="flex items-center">
           <AlertTriangle className="mr-2 h-5 w-5 text-orange-500" />
@@ -54,7 +63,7 @@ export default function LowStockAlert() {
           </div>
         ) : lowStockProducts.length > 0 ? (
           <div className="space-y-3">
-            {lowStockProducts.map((product) => (
+            {lowStockProducts.slice(0, 3).map((product) => (
               <Alert key={product._id} className="border-orange-200 bg-orange-50">
                 <Package className="h-4 w-4" />
                 <AlertDescription>
@@ -70,6 +79,11 @@ export default function LowStockAlert() {
                 </AlertDescription>
               </Alert>
             ))}
+            {lowStockProducts.length > 3 && (
+              <div className="text-center text-sm text-gray-500 mt-2">
+                +{lowStockProducts.length - 3} more items need attention
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-6 text-gray-500">

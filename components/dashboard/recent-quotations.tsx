@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText } from "lucide-react"
@@ -16,6 +17,7 @@ interface RecentQuotation {
 export default function RecentQuotations() {
   const [quotations, setQuotations] = useState<RecentQuotation[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     fetchRecentQuotations()
@@ -33,6 +35,10 @@ export default function RecentQuotations() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleQuotationClick = (quotationId: string) => {
+    router.push(`/quotations/${quotationId}`)
   }
 
   const getStatusColor = (status: string) => {
@@ -66,7 +72,11 @@ export default function RecentQuotations() {
         ) : quotations.length > 0 ? (
           <div className="space-y-3">
             {quotations.map((quotation) => (
-              <div key={quotation._id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div
+                key={quotation._id}
+                className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-200"
+                onClick={() => handleQuotationClick(quotation._id)}
+              >
                 <div className="flex items-center space-x-3">
                   <FileText className="h-4 w-4 text-gray-400" />
                   <div>

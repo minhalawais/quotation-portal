@@ -17,6 +17,7 @@ import {
   DollarSign,
   Package,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useSession } from "next-auth/react"
 import { logActivity } from "@/lib/logger"
@@ -44,11 +45,12 @@ interface QuotationListProps {
 }
 
 export default function QuotationList({ userRole }: QuotationListProps) {
+  const router = useRouter()
+
   const [quotations, setQuotations] = useState<Quotation[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
   const [viewModalOpen, setViewModalOpen] = useState(false)
-  const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const { toast } = useToast()
   const { data: session } = useSession()
 
@@ -92,23 +94,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
     }
   }
 
-  const handlePreview = async (quotation: Quotation) => {
-    setSelectedQuotation(quotation)
-    setPreviewModalOpen(true)
-
-    if (session) {
-      await logActivity({
-        userId: session.user.id,
-        userName: session.user.name,
-        userRole: session.user.role,
-        action: "VIEW",
-        resource: "Quotation",
-        resourceId: quotation._id,
-        details: `Previewed quotation for ${quotation.customerName}`,
-        status: "success",
-      })
-    }
-  }
 
   const handleDownload = async (quotation: Quotation) => {
     try {
@@ -164,13 +149,22 @@ export default function QuotationList({ userRole }: QuotationListProps) {
     }
   }
 
-  const handleWhatsAppShare = async (quotation: Quotation) => {
-    try {
-      const formattedPhone = formatPhoneForWhatsApp(quotation.customerPhone)
-      const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
-      const message = generateWhatsAppMessage(quotation, quotationUrl)
-      const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
+// Updated parts in quotation-list.tsx
 
+const handleWhatsAppShare = async (quotation: Quotation) => {
+  try {
+    const formattedPhone = formatPhoneForWhatsApp(quotation.customerPhone)
+    const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+    const message = generateWhatsAppMessage(quotation, quotationUrl)
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`
+
+    // Update status to "sent" when sharing via WhatsApp
+    const response = await fetch(`/api/quotations/${quotation._id}/send`, {
+      method: "POST",
+    })
+
+    if (response.ok) {
+      setQuotations(quotations.map((q) => (q._id === quotation._id ? { ...q, status: "sent" } : q)))
       window.open(whatsappUrl, "_blank")
 
       if (session) {
@@ -188,38 +182,49 @@ export default function QuotationList({ userRole }: QuotationListProps) {
 
       toast({
         title: "Success",
-        description: "WhatsApp opened with quotation link",
+        description: "WhatsApp opened with quotation link and status updated to sent",
       })
-    } catch (error) {
-      if (session) {
-        await logActivity({
-          userId: session.user.id,
-          userName: session.user.name,
-          userRole: session.user.role,
-          action: "SHARE",
-          resource: "Quotation",
-          resourceId: quotation._id,
-          details: `Failed to share quotation via WhatsApp to ${quotation.customerName}`,
-          status: "error",
-        })
-      }
-
-      toast({
-        title: "Error",
-        description: "Failed to open WhatsApp",
-        variant: "destructive",
+    } else {
+      throw new Error("Failed to update quotation status")
+    }
+  } catch (error) {
+    if (session) {
+      await logActivity({
+        userId: session.user.id,
+        userName: session.user.name,
+        userRole: session.user.role,
+        action: "SHARE",
+        resource: "Quotation",
+        resourceId: quotation._id,
+        details: `Failed to share quotation via WhatsApp to ${quotation.customerName}`,
+        status: "error",
       })
     }
-  }
 
-  const handleCopyLink = async (quotation: Quotation) => {
-    try {
-      const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
-      await navigator.clipboard.writeText(quotationUrl)
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to open WhatsApp",
+      variant: "destructive",
+    })
+  }
+}
+
+const handleCopyLink = async (quotation: Quotation) => {
+  try {
+    const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+    await navigator.clipboard.writeText(quotationUrl)
+
+    // Update status to "sent" when copying link
+    const response = await fetch(`/api/quotations/${quotation._id}/send`, {
+      method: "POST",
+    })
+
+    if (response.ok) {
+      setQuotations(quotations.map((q) => (q._id === quotation._id ? { ...q, status: "sent" } : q)))
 
       toast({
         title: "Success",
-        description: "Quotation link copied to clipboard",
+        description: "Quotation link copied to clipboard and status updated to sent",
       })
 
       if (session) {
@@ -234,45 +239,45 @@ export default function QuotationList({ userRole }: QuotationListProps) {
           status: "success",
         })
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy link",
-        variant: "destructive",
-      })
+    } else {
+      throw new Error("Failed to update quotation status")
     }
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to copy link",
+      variant: "destructive",
+    })
   }
+}
 
-  const handleSendQuotation = async (quotation: Quotation) => {
-    try {
-      const response = await fetch(`/api/quotations/${quotation._id}/send`, {
-        method: "POST",
-      })
+const handleSendQuotation = async (quotation: Quotation) => {
+  try {
+    const response = await fetch(`/api/quotations/${quotation._id}/send`, {
+      method: "POST",
+    })
 
-      if (response.ok) {
-        setQuotations(quotations.map((q) => (q._id === quotation._id ? { ...q, status: "sent" } : q)))
+    if (response.ok) {
+      setQuotations(quotations.map((q) => (q._id === quotation._id ? { ...q, status: "sent" } : q)))
 
-        if (session) {
-          await logActivity({
-            userId: session.user.id,
-            userName: session.user.name,
-            userRole: session.user.role,
-            action: "SEND",
-            resource: "Quotation",
-            resourceId: quotation._id,
-            details: `Sent quotation to ${quotation.customerName}`,
-            status: "success",
-          })
-        }
-
-        toast({
-          title: "Success",
-          description: "Quotation sent successfully",
-        })
+      // Open share dialog after sending
+      if (navigator.share) {
+        const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+        await navigator.share({
+          title: `Quotation for ${quotation.customerName}`,
+          text: `Please review your quotation from Inventory Portal: ${quotationUrl}`,
+          url: quotationUrl,
+        });
       } else {
-        throw new Error("Failed to send quotation")
+        // Fallback for browsers that don't support Web Share API
+        const quotationUrl = `${window.location.origin}/quotations/${quotation._id}`
+        await navigator.clipboard.writeText(quotationUrl)
+        toast({
+          title: "Link Copied",
+          description: "Quotation link copied to clipboard. You can now share it anywhere.",
+        })
       }
-    } catch (error) {
+
       if (session) {
         await logActivity({
           userId: session.user.id,
@@ -281,19 +286,55 @@ export default function QuotationList({ userRole }: QuotationListProps) {
           action: "SEND",
           resource: "Quotation",
           resourceId: quotation._id,
-          details: `Failed to send quotation to ${quotation.customerName}`,
-          status: "error",
+          details: `Sent quotation to ${quotation.customerName}`,
+          status: "success",
         })
       }
 
       toast({
-        title: "Error",
-        description: "Failed to send quotation",
-        variant: "destructive",
+        title: "Success",
+        description: "Quotation sent successfully and marked as sent",
+      })
+    } else {
+      throw new Error("Failed to send quotation")
+    }
+  } catch (error) {
+    if (session) {
+      await logActivity({
+        userId: session.user.id,
+        userName: session.user.name,
+        userRole: session.user.role,
+        action: "SEND",
+        resource: "Quotation",
+        resourceId: quotation._id,
+        details: `Failed to send quotation to ${quotation.customerName}`,
+        status: "error",
       })
     }
-  }
 
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to send quotation",
+      variant: "destructive",
+    })
+  }
+}
+const handlePreview = (quotation: Quotation) => {
+  router.push(`/quotations/${quotation._id}`)
+
+  if (session) {
+    logActivity({
+      userId: session.user.id,
+      userName: session.user.name,
+      userRole: session.user.role,
+      action: "VIEW",
+      resource: "Quotation",
+      resourceId: quotation._id,
+      details: `Previewed quotation for ${quotation.customerName}`,
+      status: "success",
+    })
+  }
+}
   const getStatusColor = (status: string) => {
     switch (status) {
       case "sent":
@@ -480,13 +521,6 @@ export default function QuotationList({ userRole }: QuotationListProps) {
         onClose={() => setViewModalOpen(false)}
       />
 
-      <QuotationPreview
-        quotation={selectedQuotation}
-        isOpen={previewModalOpen}
-        onClose={() => setPreviewModalOpen(false)}
-        onDownload={() => selectedQuotation && handleDownload(selectedQuotation)}
-        onSend={() => selectedQuotation && handleSendQuotation(selectedQuotation)}
-      />
     </>
   )
 }

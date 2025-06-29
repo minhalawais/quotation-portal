@@ -129,13 +129,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </Link>
             )}
 
-            {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative hover:bg-gray-100">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
-                3
-              </Badge>
-            </Button>
 
             {/* User Info */}
             <div className="flex items-center space-x-3">
