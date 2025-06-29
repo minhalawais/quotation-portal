@@ -67,13 +67,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </Link>
             )}
 
-            {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 h-10 w-10">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
-                3
-              </Badge>
-            </Button>
 
             {/* User Avatar */}
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">

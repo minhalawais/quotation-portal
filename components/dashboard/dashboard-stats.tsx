@@ -75,7 +75,7 @@ export default function DashboardStats() {
       icon: TrendingUp,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
-      route: "/revenue",
+      route: "/quotations",
     },
   ]
 
