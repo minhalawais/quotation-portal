@@ -93,4 +93,4 @@ For questions or feedback, please contact [minhalawais1@gmail.com](https://githu
 
 ---
 
-**Crafted with ❤️ by [Minhal Awais]([https://www.linkedin.com/in/minhal-awais-591aa4225/](https://www.linkedin.com/in/minhal-awais-601216227/))**
+**Crafted with ❤️ by [Minhal Awais](https://www.linkedin.com/in/minhal-awais-601216227/)**
